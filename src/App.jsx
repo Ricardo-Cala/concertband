@@ -3,6 +3,7 @@ import { supabase } from './supabase'
 import Header from './components/Header'
 import NavBar from './components/NavBar'
 import NuevoConcierto from './components/NuevoConcierto'
+import Entradas from './components/Entradas'
 
 export default function App() {
   const [pantalla, setPantalla] = useState('inicio')
@@ -155,7 +156,7 @@ export default function App() {
     </div>
   )
 
-  const pantallas = { inicio: <PantallaInicio />, conciertos: <PantallaConciertos />, calendario: <PantallaCalendario />, grupo: <PantallaGrupo /> }
+ const pantallas = { inicio: <PantallaInicio />, conciertos: <PantallaConciertos />, entradas: <Entradas conciertos={conciertos} amigos={amigos} />, calendario: <PantallaCalendario />, grupo: <PantallaGrupo /> }
 
   return (
     <div style={{ maxWidth: 390, margin: '0 auto', background: 'white', minHeight: '100vh' }}>
