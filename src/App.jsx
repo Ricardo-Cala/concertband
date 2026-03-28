@@ -1,4 +1,5 @@
 import EditarConcierto from './components/EditarConcierto'
+import Grupo from './components/Grupo'
 import Asistencia from './components/Asistencia'
 import Resumen from './components/Resumen'
 import { useState, useEffect } from 'react'
@@ -109,18 +110,6 @@ export default function App() {
   </div>
 )
 
-  const PantallaGrupo = () => (
-    <div style={{ padding: 16 }}>
-      <div style={{ fontSize: 13, fontWeight: 500, color: '#888', marginBottom: 12 }}>MIEMBROS · {amigos.length}</div>
-      {amigos.map(a => (
-        <div key={a.id} style={{ background: 'white', borderRadius: 10, padding: '10px 14px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 36, height: 36, borderRadius: '50%', background: a.color, color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 500, flexShrink: 0 }}>{a.iniciales}</div>
-          <div style={{ fontSize: 14, fontWeight: 500 }}>{a.nombre}</div>
-        </div>
-      ))}
-    </div>
-  )
-
   const PantallaCalendario = () => {
     const meses = {}
     conciertos.forEach(c => {
@@ -178,7 +167,7 @@ export default function App() {
     </div>
   )
 
- const pantallas = { inicio: <PantallaInicio />, conciertos: <PantallaConciertos />, entradas: <Entradas conciertos={conciertos} amigos={amigos} />, asistencia: <Asistencia conciertos={conciertos} amigos={amigos} />, resumen: <Resumen conciertos={conciertos} amigos={amigos} />, calendario: <PantallaCalendario />, grupo: <PantallaGrupo /> }
+ const pantallas = { inicio: <PantallaInicio />, conciertos: <PantallaConciertos />, entradas: <Entradas conciertos={conciertos} amigos={amigos} />, asistencia: <Asistencia conciertos={conciertos} amigos={amigos} />, resumen: <Resumen conciertos={conciertos} amigos={amigos} />, calendario: <PantallaCalendario />, grupo: <Grupo amigos={amigos} onActualizado={() => supabase.from('amigos').select('*').then(({ data }) => data && setAmigos(data))} /> }
 
   return (
     <div style={{ maxWidth: 390, margin: '0 auto', background: 'white', minHeight: '100vh' }}>
