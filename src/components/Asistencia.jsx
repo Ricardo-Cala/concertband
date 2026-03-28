@@ -47,8 +47,8 @@ export default function Asistencia({ conciertos, amigos }) {
   }
 
   const van = amigos.filter(a => getEstado(a.id) === 'va').length
-  const novan = amigos.filter(a => getEstado(a.id) === 'novan').length
-  const pendientes = amigos.filter(a => getEstado(a.id) === 'pendiente').length
+const novan = amigos.filter(a => getEstado(a.id) === 'nova').length
+const pendientes = amigos.filter(a => getEstado(a.id) === 'pendiente').length
 
   const BtnEstado = ({ actual, valor, label, bg, color }) => (
     <button onClick={() => setEstado(actual, valor)} style={{
