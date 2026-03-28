@@ -1,3 +1,4 @@
+import EditarConcierto from './components/EditarConcierto'
 import Asistencia from './components/Asistencia'
 import Resumen from './components/Resumen'
 import { useState, useEffect } from 'react'
@@ -12,6 +13,7 @@ export default function App() {
   const [amigos, setAmigos] = useState([])
   const [conciertos, setConciertos] = useState([])
   const [mostrarNuevo, setMostrarNuevo] = useState(false)
+  const [conciertoEditando, setConciertoEditando] = useState(null)
 
   useEffect(() => {
     supabase.from('amigos').select('*').then(({ data }) => data && setAmigos(data))
@@ -71,33 +73,41 @@ export default function App() {
   )
 
   const PantallaConciertos = () => (
-    <div style={{ padding: 16 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-        <div style={{ fontSize: 13, fontWeight: 500, color: '#888' }}>TODOS LOS CONCIERTOS</div>
-        <button onClick={() => setMostrarNuevo(true)} style={{ background: '#7F77DD', color: 'white', border: 'none', borderRadius: 20, padding: '6px 14px', fontSize: 12, fontWeight: 500 }}>+ Nuevo</button>
-      </div>
-      {conciertos.length === 0 && (
-        <div style={{ background: 'white', borderRadius: 12, padding: 20, textAlign: 'center', color: '#888' }}>
-          No hay conciertos todavía
-        </div>
-      )}
-      {conciertos.map(c => (
-        <div key={c.id} style={{ background: 'white', borderRadius: 12, padding: 14, marginBottom: 10 }}>
-          <div style={{ fontSize: 15, fontWeight: 500, marginBottom: 2 }}>{c.artista}</div>
-          <div style={{ fontSize: 12, color: '#888', marginBottom: 8 }}>
-            {new Date(c.fecha).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}
-          </div>
-          <div style={{ fontSize: 13, marginBottom: 8 }}>📍 {c.recinto}, {c.ciudad}</div>
-          {c.hora_apertura && <div style={{ fontSize: 12, color: '#888', marginBottom: 8 }}>Apertura: {c.hora_apertura}</div>}
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            <span style={tagEstado(c.estado)}>{c.estado}</span>
-            {c.transportes?.[0] && <span style={{ background: '#EEEDFE', color: '#3C3489', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 500 }}>🚆 {c.transportes[0].tipo}</span>}
-            {c.hoteles?.[0] && <span style={{ background: '#E1F5EE', color: '#085041', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 500 }}>🏨 {c.hoteles[0].nombre}</span>}
-          </div>
-        </div>
-      ))}
+  <div style={{ padding: 16 }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+      <div style={{ fontSize: 13, fontWeight: 500, color: '#888' }}>TODOS LOS CONCIERTOS</div>
+      <button onClick={() => setMostrarNuevo(true)} style={{ background: '#7F77DD', color: 'white', border: 'none', borderRadius: 20, padding: '6px 14px', fontSize: 12, fontWeight: 500 }}>+ Nuevo</button>
     </div>
-  )
+    {conciertos.length === 0 && (
+      <div style={{ background: 'white', borderRadius: 12, padding: 20, textAlign: 'center', color: '#888' }}>
+        No hay conciertos todavía
+      </div>
+    )}
+    {conciertos.map(c => (
+      <div key={c.id} style={{ background: 'white', borderRadius: 12, padding: 14, marginBottom: 10 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 15, fontWeight: 500, marginBottom: 2 }}>{c.artista}</div>
+            <div style={{ fontSize: 12, color: '#888', marginBottom: 8 }}>
+              {new Date(c.fecha).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}
+            </div>
+            <div style={{ fontSize: 13, marginBottom: 8 }}>📍 {c.recinto}, {c.ciudad}</div>
+            {c.hora_apertura && <div style={{ fontSize: 12, color: '#888', marginBottom: 8 }}>Apertura: {c.hora_apertura}</div>}
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              <span style={tagEstado(c.estado)}>{c.estado}</span>
+              {c.transportes?.[0] && <span style={{ background: '#EEEDFE', color: '#3C3489', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 500 }}>🚆 {c.transportes[0].tipo}</span>}
+              {c.hoteles?.[0] && <span style={{ background: '#E1F5EE', color: '#085041', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 500 }}>🏨 {c.hoteles[0].nombre}</span>}
+            </div>
+          </div>
+          <button onClick={() => setConciertoEditando(c)} style={{
+            background: 'none', border: '1px solid #eee', borderRadius: 8,
+            padding: '4px 10px', fontSize: 12, color: '#888', cursor: 'pointer', marginLeft: 8
+          }}>✏️ Editar</button>
+        </div>
+      </div>
+    ))}
+  </div>
+)
 
   const PantallaGrupo = () => (
     <div style={{ padding: 16 }}>
@@ -148,6 +158,16 @@ export default function App() {
     )
   }
 
+  if (conciertoEditando) return (
+  <div style={{ maxWidth: 390, margin: '0 auto', background: 'white', minHeight: '100vh' }}>
+    <EditarConcierto
+      concierto={conciertoEditando}
+      amigos={amigos}
+      onGuardado={() => { setConciertoEditando(null); cargarConciertos() }}
+      onCancelar={() => setConciertoEditando(null)}
+    />
+  </div>
+)
   if (mostrarNuevo) return (
     <div style={{ maxWidth: 390, margin: '0 auto', background: 'white', minHeight: '100vh' }}>
       <NuevoConcierto
