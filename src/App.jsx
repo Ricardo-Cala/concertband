@@ -1,4 +1,5 @@
 import Asistencia from './components/Asistencia'
+import Resumen from './components/Resumen'
 import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
 import Header from './components/Header'
@@ -157,7 +158,7 @@ export default function App() {
     </div>
   )
 
- const pantallas = { inicio: <PantallaInicio />, conciertos: <PantallaConciertos />, entradas: <Entradas conciertos={conciertos} amigos={amigos} />, asistencia: <Asistencia conciertos={conciertos} amigos={amigos} />, calendario: <PantallaCalendario />, grupo: <PantallaGrupo /> }
+ const pantallas = { inicio: <PantallaInicio />, conciertos: <PantallaConciertos />, entradas: <Entradas conciertos={conciertos} amigos={amigos} />, asistencia: <Asistencia conciertos={conciertos} amigos={amigos} />, resumen: <Resumen conciertos={conciertos} amigos={amigos} />, calendario: <PantallaCalendario />, grupo: <PantallaGrupo /> }
 
   return (
     <div style={{ maxWidth: 390, margin: '0 auto', background: 'white', minHeight: '100vh' }}>

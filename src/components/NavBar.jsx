@@ -4,6 +4,7 @@ export default function NavBar({ pantalla, setPantalla }) {
   { id: 'conciertos', label: 'Conciertos', icon: '♪' },
   { id: 'entradas', label: 'Entradas', icon: '🎟' },
   { id: 'asistencia', label: 'Asistencia', icon: '👋' },
+  { id: 'resumen', label: 'Resumen', icon: '📋' },
   { id: 'calendario', label: 'Calendario', icon: '📅' },
   { id: 'grupo', label: 'Grupo', icon: '👥' },
 ]
