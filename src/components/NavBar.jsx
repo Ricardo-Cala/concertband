@@ -1,8 +1,9 @@
 export default function NavBar({ pantalla, setPantalla }) {
-  const tabs = [
+ const tabs = [
   { id: 'inicio', label: 'Inicio', icon: '★' },
   { id: 'conciertos', label: 'Conciertos', icon: '♪' },
   { id: 'entradas', label: 'Entradas', icon: '🎟' },
+  { id: 'asistencia', label: 'Asistencia', icon: '👋' },
   { id: 'calendario', label: 'Calendario', icon: '📅' },
   { id: 'grupo', label: 'Grupo', icon: '👥' },
 ]
