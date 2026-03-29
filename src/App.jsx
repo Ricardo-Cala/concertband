@@ -17,9 +17,21 @@ export default function App() {
   const [conciertoEditando, setConciertoEditando] = useState(null)
 
   useEffect(() => {
-    supabase.from('amigos').select('*').then(({ data }) => data && setAmigos(data))
-    cargarConciertos()
-  }, [])
+  supabase.from('amigos').select('*').then(({ data }) => data && setAmigos(data))
+  cargarConciertos()
+
+  const canal = supabase
+    .channel('cambios-globales')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'conciertos' }, () => cargarConciertos())
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'transportes' }, () => cargarConciertos())
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'hoteles' }, () => cargarConciertos())
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'amigos' }, () => {
+      supabase.from('amigos').select('*').then(({ data }) => data && setAmigos(data))
+    })
+    .subscribe()
+
+  return () => supabase.removeChannel(canal)
+}, [])
 
   const cargarConciertos = async () => {
     const { data } = await supabase.from('conciertos').select(`
