@@ -1,4 +1,6 @@
-import { useState, useEffect } from 'react'
+import { writeFileSync } from 'fs'
+
+const code = `import { useState, useEffect } from 'react'
 import { supabase } from '../supabase'
 
 export default function EditarConcierto({ concierto, amigos, onGuardado, onCancelar }) {
@@ -201,4 +203,7 @@ export default function EditarConcierto({ concierto, amigos, onGuardado, onCance
       )}
     </div>
   )
-}
+}`
+
+writeFileSync('src/components/EditarConcierto.jsx', code)
+console.log('Archivo escrito: ' + code.split('\n').length + ' líneas')
