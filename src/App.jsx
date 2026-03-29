@@ -34,7 +34,7 @@ export default function App() {
     padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 500
   })
 
-  cconst PantallaInicio = () => {
+  const PantallaInicio = () => {
   const hoy = new Date(new Date().toDateString())
   const proximos = conciertos.filter(c => new Date(c.fecha) >= hoy)
   const siguiente = proximos[0]
