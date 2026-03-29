@@ -49,7 +49,7 @@ export default function App() {
         </div>
       </div>
       <div style={{ fontSize: 13, fontWeight: 500, color: '#888', marginBottom: 10 }}>PRÓXIMOS CONCIERTOS</div>
-      {conciertos.length === 0 && (
+      {conciertos.filter(c => new Date(c.fecha) >= new Date(new Date().toDateString())).length === 0 && (
         <div style={{ background: 'white', borderRadius: 12, padding: 20, textAlign: 'center', color: '#888', fontSize: 14 }}>
           Aún no hay conciertos.<br />
           <span style={{ color: '#7F77DD', cursor: 'pointer' }} onClick={() => setMostrarNuevo(true)}>
@@ -57,7 +57,7 @@ export default function App() {
           </span>
         </div>
       )}
-      {conciertos.slice(0, 3).map(c => (
+      {conciertos.filter(c => new Date(c.fecha) >= new Date(new Date().toDateString())).slice(0, 3).map(c => (
         <div key={c.id} style={{ background: 'white', borderRadius: 12, padding: 14, marginBottom: 10, borderLeft: '3px solid #7F77DD' }}>
           <div style={{ fontSize: 15, fontWeight: 500, marginBottom: 2 }}>{c.artista}</div>
           <div style={{ fontSize: 12, color: '#888', marginBottom: 8 }}>
