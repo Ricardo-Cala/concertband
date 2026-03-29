@@ -1,221 +1,167 @@
 import { writeFileSync } from 'fs'
 
-const code = `import { useState, useEffect } from 'react'
-import { supabase } from './supabase'
-import Header from './components/Header'
-import FichaConcierto from './components/FichaConcierto'
-import EditarConcierto from './components/EditarConcierto'
-import NuevoConcierto from './components/NuevoConcierto'
-import Grupo from './components/Grupo'
+const code = `import { useState, useRef } from 'react'
+import { supabase } from '../supabase'
 
-export default function App() {
-  const [pantalla, setPantalla] = useState('inicio')
-  const [amigos, setAmigos] = useState([])
-  const [conciertos, setConciertos] = useState([])
-  const [conciertoSeleccionado, setConciertoSeleccionado] = useState(null)
-  const [conciertoEditando, setConciertoEditando] = useState(null)
-  const [mostrarNuevo, setMostrarNuevo] = useState(false)
+export default function Grupo({ amigos, onActualizado }) {
+  const [mostrarForm, setMostrarForm] = useState(false)
+  const [editando, setEditando] = useState(null)
+  const [form, setForm] = useState({ nombre: '', iniciales: '', color: '#534AB7' })
+  const [subiendo, setSubiendo] = useState(null)
+  const [confirmaBorrar, setConfirmaBorrar] = useState(null)
+  const fileRefs = useRef({})
 
-  useEffect(() => {
-    supabase.from('amigos').select('*').then(({ data }) => data && setAmigos(data))
-    cargarConciertos()
-    const canal = supabase
-      .channel('cambios-globales')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'conciertos' }, () => cargarConciertos())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'transportes' }, () => cargarConciertos())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'hoteles' }, () => cargarConciertos())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'amigos' }, () => {
-        supabase.from('amigos').select('*').then(({ data }) => data && setAmigos(data))
-      })
-      .subscribe()
-    return () => supabase.removeChannel(canal)
-  }, [])
-
-  const cargarConciertos = async () => {
-    const { data } = await supabase.from('conciertos').select(\`*, transportes(*), hoteles(*)\`).order('fecha')
-    if (data) setConciertos(data)
-  }
-
-  const hoy = new Date(new Date().toDateString())
-  const proximos = conciertos.filter(c => new Date(c.fecha) >= hoy)
-  const pasados = conciertos.filter(c => new Date(c.fecha) < hoy)
-
-  const tagEstado = (estado) => ({
-    background: estado === 'confirmado' ? '#EAF3DE' : '#FAEEDA',
-    color: estado === 'confirmado' ? '#27500A' : '#633806',
-    padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 500
-  })
-
-  const iconTransporte = (tipo) => {
-    if (tipo === 'Avión') return '✈️'
-    if (tipo === 'Coche') return '🚗'
-    if (tipo === 'Autobús') return '🚌'
-    if (tipo === 'AVE') return '🚄'
-    return '🚆'
-  }
-
-  const TarjetaConcierto = ({ c, opacidad = 1 }) => (
-    <div onClick={() => { setConciertoSeleccionado(c) }} style={{
-      background: 'white', borderRadius: 12, padding: 14, marginBottom: 10,
-      borderLeft: '3px solid #7F77DD', cursor: 'pointer', opacity: opacidad,
-      transition: 'opacity 0.15s'
-    }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 15, fontWeight: 500, marginBottom: 2 }}>{c.artista}</div>
-          <div style={{ fontSize: 12, color: '#888', marginBottom: 8 }}>
-            {new Date(c.fecha).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })} · {c.recinto}, {c.ciudad}
-          </div>
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            <span style={tagEstado(c.estado)}>{c.estado}</span>
-            {c.transportes?.[0] && <span style={{ background: '#EEEDFE', color: '#3C3489', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 500 }}>{iconTransporte(c.transportes[0].tipo)} {c.transportes[0].tipo}</span>}
-            {c.hoteles?.[0] && <span style={{ background: '#E1F5EE', color: '#085041', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 500 }}>🏨 {c.hoteles[0].nombre}</span>}
-          </div>
-        </div>
-        <span style={{ color: '#7F77DD', fontSize: 20, marginLeft: 8 }}>›</span>
-      </div>
-    </div>
-  )
-
-  const PantallaInicio = () => {
-    const siguiente = proximos[0]
-    const diasRestantes = siguiente ? Math.ceil((new Date(siguiente.fecha) - hoy) / (1000 * 60 * 60 * 24)) : null
-    return (
-      <div style={{ padding: 16 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
-          <div style={{ background: 'white', borderRadius: 10, padding: 14 }}>
-            <div style={{ fontSize: 24, fontWeight: 500 }}>{conciertos.length}</div>
-            <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>Conciertos totales</div>
-          </div>
-          <div style={{ background: 'white', borderRadius: 10, padding: 14 }}>
-            <div style={{ fontSize: 24, fontWeight: 500 }}>{conciertos.filter(c => c.estado === 'confirmado').length}</div>
-            <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>Confirmados</div>
-          </div>
-        </div>
-
-        {siguiente && (
-          <div style={{ background: '#1a1a2e', borderRadius: 14, padding: 16, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 16, cursor: 'pointer' }}
-            onClick={() => setConciertoSeleccionado(siguiente)}>
-            <div style={{ textAlign: 'center', flexShrink: 0 }}>
-              <div style={{ fontSize: 42, fontWeight: 500, color: '#7F77DD', lineHeight: 1 }}>{diasRestantes}</div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>{diasRestantes === 1 ? 'día' : 'días'}</div>
-            </div>
-            <div style={{ borderLeft: '1px solid rgba(255,255,255,0.15)', paddingLeft: 16, flex: 1 }}>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 4 }}>PRÓXIMO CONCIERTO</div>
-              <div style={{ fontSize: 16, fontWeight: 500, color: 'white', marginBottom: 2 }}>{siguiente.artista}</div>
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)' }}>
-                {new Date(siguiente.fecha).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })} · {siguiente.ciudad}
-              </div>
-            </div>
-          </div>
-        )}
-
-        <div style={{ fontSize: 13, fontWeight: 500, color: '#888', marginBottom: 10 }}>PRÓXIMOS CONCIERTOS</div>
-        {proximos.length === 0 && (
-          <div style={{ background: 'white', borderRadius: 12, padding: 20, textAlign: 'center', color: '#888', fontSize: 14 }}>
-            Aún no hay conciertos.<br />
-            <span style={{ color: '#7F77DD', cursor: 'pointer' }} onClick={() => setMostrarNuevo(true)}>Añade el primero</span>
-          </div>
-        )}
-        {proximos.slice(0, 3).map(c => <TarjetaConcierto key={c.id} c={c} />)}
-      </div>
-    )
-  }
-
-  const PantallaConciertos = () => (
-    <div style={{ padding: 16 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-        <div style={{ fontSize: 13, fontWeight: 500, color: '#888' }}>CONCIERTOS</div>
-        <button onClick={() => setMostrarNuevo(true)} style={{ background: '#7F77DD', color: 'white', border: 'none', borderRadius: 20, padding: '6px 14px', fontSize: 12, fontWeight: 500, cursor: 'pointer' }}>+ Nuevo</button>
-      </div>
-      {proximos.length > 0 && (
-        <>
-          <div style={{ fontSize: 11, color: '#7F77DD', fontWeight: 500, marginBottom: 8 }}>PRÓXIMOS</div>
-          {proximos.map(c => <TarjetaConcierto key={c.id} c={c} />)}
-        </>
-      )}
-      {pasados.length > 0 && (
-        <>
-          <div style={{ fontSize: 11, color: '#888', fontWeight: 500, marginBottom: 8, marginTop: 8 }}>PASADOS</div>
-          {pasados.map(c => <TarjetaConcierto key={c.id} c={c} opacidad={0.5} />)}
-        </>
-      )}
-      {conciertos.length === 0 && (
-        <div style={{ background: 'white', borderRadius: 12, padding: 20, textAlign: 'center', color: '#888' }}>No hay conciertos todavía</div>
-      )}
-    </div>
-  )
-
-  if (conciertoEditando) return (
-    <div style={{ maxWidth: 390, margin: '0 auto', background: 'white', minHeight: '100vh' }}>
-      <EditarConcierto
-        concierto={conciertoEditando}
-        amigos={amigos}
-        onGuardado={() => { setConciertoEditando(null); setConciertoSeleccionado(null); cargarConciertos() }}
-        onCancelar={() => setConciertoEditando(null)}
-      />
-    </div>
-  )
-
-  if (conciertoSeleccionado) return (
-    <FichaConcierto
-      concierto={conciertoSeleccionado}
-      amigos={amigos}
-      onVolver={() => setConciertoSeleccionado(null)}
-      onEditar={() => setConciertoEditando(conciertoSeleccionado)}
-    />
-  )
-
-  if (mostrarNuevo) return (
-    <div style={{ maxWidth: 390, margin: '0 auto', background: 'white', minHeight: '100vh' }}>
-      <NuevoConcierto
-        amigos={amigos}
-        onGuardado={() => { setMostrarNuevo(false); cargarConciertos() }}
-        onCancelar={() => setMostrarNuevo(false)}
-      />
-    </div>
-  )
-
-  const pantallas = {
-    inicio: <PantallaInicio />,
-    conciertos: <PantallaConciertos />,
-    grupo: <Grupo amigos={amigos} onActualizado={() => supabase.from('amigos').select('*').then(({ data }) => data && setAmigos(data))} />
-  }
-
-  const tabs = [
-    { id: 'inicio', label: 'Inicio', icon: '★' },
-    { id: 'conciertos', label: 'Conciertos', icon: '♪' },
-    { id: 'grupo', label: 'Grupo', icon: '👥' },
+  const colores = [
+    '#534AB7', '#0F6E56', '#993C1D', '#185FA5',
+    '#993556', '#3B6D11', '#BA7517', '#D85A30', '#1D9E75'
   ]
 
-  return (
-    <div style={{ maxWidth: 390, margin: '0 auto', background: '#f5f5f7', minHeight: '100vh' }}>
-      <Header amigos={amigos} />
-      <div style={{ display: 'flex', borderBottom: '1px solid #e5e5e5', background: 'white', position: 'sticky', top: 0, zIndex: 10 }}>
-        {tabs.map(t => (
-          <button key={t.id} onClick={() => setPantalla(t.id)} style={{
-            flex: 1, padding: '10px 4px', fontSize: 11, background: 'none', border: 'none', cursor: 'pointer',
-            borderBottom: pantalla === t.id ? '2px solid #7F77DD' : '2px solid transparent',
-            color: pantalla === t.id ? '#7F77DD' : '#888',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3
-          }}>
-            <span style={{ fontSize: 16 }}>{t.icon}</span>
-            {t.label}
-          </button>
-        ))}
+  const abrirNuevo = () => {
+    setEditando(null)
+    setForm({ nombre: '', iniciales: '', color: '#534AB7' })
+    setMostrarForm(true)
+  }
+
+  const abrirEditar = (amigo) => {
+    setEditando(amigo)
+    setForm({ nombre: amigo.nombre, iniciales: amigo.iniciales, color: amigo.color })
+    setMostrarForm(true)
+  }
+
+  const guardar = async () => {
+    if (!form.nombre || !form.iniciales) { alert('Rellena nombre e iniciales'); return }
+    if (editando) {
+      await supabase.from('amigos').update({ nombre: form.nombre, iniciales: form.iniciales, color: form.color }).eq('id', editando.id)
+    } else {
+      await supabase.from('amigos').insert([{ nombre: form.nombre, iniciales: form.iniciales, color: form.color }])
+    }
+    setMostrarForm(false)
+    onActualizado()
+  }
+
+  const borrar = async (id) => {
+    await supabase.from('amigos').delete().eq('id', id)
+    setConfirmaBorrar(null)
+    onActualizado()
+  }
+
+  const subirFoto = async (amigo, archivo) => {
+    if (!archivo) return
+    setSubiendo(amigo.id)
+    const ext = archivo.name.split('.').pop()
+    const path = amigo.id + '.' + ext
+    await supabase.storage.from('avatares').upload(path, archivo, { upsert: true })
+    const { data } = supabase.storage.from('avatares').getPublicUrl(path)
+    await supabase.from('amigos').update({ foto_url: data.publicUrl + '?t=' + Date.now() }).eq('id', amigo.id)
+    setSubiendo(null)
+    onActualizado()
+  }
+
+  if (mostrarForm) return (
+    <div style={{ padding: 16 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <h2 style={{ fontSize: 16, fontWeight: 500 }}>{editando ? 'Editar amigo' : 'Nuevo amigo'}</h2>
+        <button onClick={() => setMostrarForm(false)} style={{ background: 'none', border: 'none', fontSize: 20, color: '#888' }}>✕</button>
       </div>
-      {pantallas[pantalla]}
-      {pantalla === 'conciertos' && (
-        <button onClick={() => setMostrarNuevo(true)} style={{
-          position: 'fixed', bottom: 24, right: 24,
-          width: 48, height: 48, borderRadius: '50%',
-          background: '#7F77DD', color: 'white', border: 'none',
-          fontSize: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
-        }}>+</button>
+      <div style={{ background: 'white', borderRadius: 12, padding: 16, marginBottom: 12 }}>
+        <div style={{ marginBottom: 12 }}>
+          <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 4 }}>Nombre *</label>
+          <input value={form.nombre} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} placeholder='Ej: Bárbara'
+            style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #ddd', fontSize: 14 }} />
+        </div>
+        <div style={{ marginBottom: 12 }}>
+          <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 4 }}>Iniciales *</label>
+          <input value={form.iniciales} onChange={e => setForm(f => ({ ...f, iniciales: e.target.value.slice(0, 2) }))} placeholder='Ej: Bá' maxLength={2}
+            style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #ddd', fontSize: 14 }} />
+        </div>
+        <div style={{ marginBottom: 4 }}>
+          <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 8 }}>Color del avatar</label>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {colores.map(c => (
+              <div key={c} onClick={() => setForm(f => ({ ...f, color: c }))} style={{
+                width: 32, height: 32, borderRadius: '50%', background: c, cursor: 'pointer',
+                border: form.color === c ? '3px solid #1a1a2e' : '3px solid transparent',
+              }} />
+            ))}
+          </div>
+        </div>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+        <div style={{ width: 52, height: 52, borderRadius: '50%', background: form.color, color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 500 }}>{form.iniciales || '?'}</div>
+        <span style={{ fontSize: 13, color: '#888' }}>Así se verá el avatar</span>
+      </div>
+      <button onClick={guardar} style={{ width: '100%', padding: 12, borderRadius: 10, background: '#7F77DD', color: 'white', border: 'none', fontSize: 15, fontWeight: 500 }}>
+        {editando ? 'Guardar cambios' : 'Añadir al grupo'}
+      </button>
+    </div>
+  )
+
+  return (
+    <div style={{ padding: 16 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+        <div style={{ fontSize: 13, fontWeight: 500, color: '#888' }}>GRUPO · {amigos.length}</div>
+        <button onClick={abrirNuevo} style={{ background: '#7F77DD', color: 'white', border: 'none', borderRadius: 20, padding: '6px 14px', fontSize: 12, fontWeight: 500, cursor: 'pointer' }}>+ Añadir</button>
+      </div>
+
+      <div style={{ background: '#EEEDFE', borderRadius: 12, padding: 12, marginBottom: 16, display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+        <span style={{ fontSize: 20 }}>📸</span>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 500, color: '#3C3489', marginBottom: 2 }}>Añade tu foto</div>
+          <div style={{ fontSize: 12, color: '#534AB7' }}>Toca tu avatar para subir una foto desde tu móvil o galería</div>
+        </div>
+      </div>
+
+      {amigos.map(a => (
+        <div key={a.id} style={{ background: 'white', borderRadius: 12, padding: '12px 14px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 12 }}>
+          
+          <div style={{ position: 'relative', flexShrink: 0, cursor: 'pointer' }} onClick={() => fileRefs.current[a.id]?.click()}>
+            {a.foto_url ? (
+              <img src={a.foto_url} alt={a.nombre} style={{ width: 52, height: 52, borderRadius: '50%', objectFit: 'cover', display: 'block' }} />
+            ) : (
+              <div style={{ width: 52, height: 52, borderRadius: '50%', background: a.color, color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 500 }}>{a.iniciales}</div>
+            )}
+            <div style={{
+              position: 'absolute', bottom: 0, right: 0,
+              width: 20, height: 20, borderRadius: '50%',
+              background: '#7F77DD', border: '2px solid white',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 10
+            }}>📷</div>
+            <input
+              ref={el => fileRefs.current[a.id] = el}
+              type='file' accept='image/*' capture='user'
+              style={{ display: 'none' }}
+              onChange={e => subirFoto(a, e.target.files[0])}
+            />
+          </div>
+
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--color-text-primary)' }}>{a.nombre}</div>
+            {subiendo === a.id && <div style={{ fontSize: 11, color: '#7F77DD', marginTop: 2 }}>Subiendo foto...</div>}
+            {!subiendo && <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>Toca la foto para cambiarla</div>}
+          </div>
+
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button onClick={() => abrirEditar(a)} style={{ background: 'none', border: '1px solid #eee', borderRadius: 8, padding: '4px 10px', fontSize: 12, color: '#888', cursor: 'pointer' }}>✏️</button>
+            <button onClick={() => setConfirmaBorrar(a.id)} style={{ background: 'none', border: '1px solid #FCEBEB', borderRadius: 8, padding: '4px 10px', fontSize: 12, color: '#E24B4A', cursor: 'pointer' }}>🗑️</button>
+          </div>
+        </div>
+      ))}
+
+      {confirmaBorrar && (
+        <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
+          <div style={{ background: 'white', borderRadius: 14, padding: 20, margin: 20, textAlign: 'center' }}>
+            <div style={{ fontSize: 14, marginBottom: 16 }}>¿Eliminar a este amigo del grupo?</div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => setConfirmaBorrar(null)} style={{ flex: 1, padding: 10, borderRadius: 8, border: '1px solid #ddd', background: 'white', fontSize: 13 }}>Cancelar</button>
+              <button onClick={() => borrar(confirmaBorrar)} style={{ flex: 1, padding: 10, borderRadius: 8, border: 'none', background: '#E24B4A', color: 'white', fontSize: 13, fontWeight: 500 }}>Eliminar</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
 }`
 
-writeFileSync('src/App.jsx', code)
-console.log('App.jsx reescrito correctamente')
+writeFileSync('src/components/Grupo.jsx', code)
+console.log('Grupo.jsx actualizado')
