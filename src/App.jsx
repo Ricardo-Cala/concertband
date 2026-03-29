@@ -8,7 +8,6 @@ import Header from './components/Header'
 import NavBar from './components/NavBar'
 import NuevoConcierto from './components/NuevoConcierto'
 import Entradas from './components/Entradas'
-import Gastos from './components/Gastos'
 
 export default function App() {
   const [pantalla, setPantalla] = useState('inicio')
@@ -221,7 +220,7 @@ export default function App() {
     </div>
   )
 
- const pantallas = { inicio: <PantallaInicio />, conciertos: <PantallaConciertos />, entradas: <Entradas conciertos={conciertos} amigos={amigos} />, asistencia: <Asistencia conciertos={conciertos} amigos={amigos} />, resumen: <Resumen conciertos={conciertos} amigos={amigos} />, gastos: <Gastos conciertos={conciertos} amigos={amigos} />, calendario: <PantallaCalendario />, grupo: <Grupo amigos={amigos} onActualizado={() => supabase.from('amigos').select('*').then(({ data }) => data && setAmigos(data))} /> }
+ const pantallas = { inicio: <PantallaInicio />, conciertos: <PantallaConciertos />, entradas: <Entradas conciertos={conciertos} amigos={amigos} />, asistencia: <Asistencia conciertos={conciertos} amigos={amigos} />, resumen: <Resumen conciertos={conciertos} amigos={amigos} />, calendario: <PantallaCalendario />, grupo: <Grupo amigos={amigos} onActualizado={() => supabase.from('amigos').select('*').then(({ data }) => data && setAmigos(data))} /> }
 
   return (
     <div style={{ maxWidth: 390, margin: '0 auto', background: 'white', minHeight: '100vh' }}>
