@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import Avatar from './Avatar'
 import { supabase } from '../supabase'
 
 export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }) {
@@ -130,16 +131,7 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
     return '🚆'
   }
 
-  const Av = ({ a, size = 34 }) => (
-    <div style={{
-      width: size, height: size, borderRadius: '50%',
-      background: a?.color, color: 'white', flexShrink: 0,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontSize: size > 28 ? 12 : 9, fontWeight: 500,
-    }}>{a?.iniciales}</div>
-  )
-
-  return (
+    return (
     <div style={{ maxWidth: 390, margin: '0 auto', background: 'white', minHeight: '100vh' }}>
       <div style={{ background: '#1a1a2e', padding: '16px 20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
@@ -199,7 +191,7 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
                 borderLeft: `3px solid ${getEstado(a.id) === 'va' ? '#639922' : getEstado(a.id) === 'nova' ? '#E24B4A' : '#FAC775'}`
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <Av a={a} />
+                  <Avatar amigo={a} />
                   <div style={{ flex: 1, fontSize: 14, fontWeight: 500 }}>{a.nombre}</div>
                   <div style={{ display: 'flex', gap: 4 }}>
                     {['va', 'nova', 'pendiente'].map((estado, i) => (
@@ -233,7 +225,7 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
             {entradas.map(e => (
               <div key={e.id} style={{ background: 'white', borderRadius: 12, padding: '12px 14px', marginBottom: 8, border: `1px solid ${e.pagada ? '#C0DD97' : '#ddd'}` }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <Av a={e.amigos} />
+                  <Avatar amigo={e.amigos} />
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 14, fontWeight: 500 }}>{e.amigos?.nombre}</div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
@@ -314,7 +306,7 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
               return (
                 <div key={g.id} style={{ background: 'white', borderRadius: 12, padding: 14, marginBottom: 12, border: '1px solid #eee' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                    <Av a={g.amigos} />
+                    <Avatar amigo={g.amigos} />
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: 14, fontWeight: 500 }}>{g.amigos?.nombre} compró</div>
                       <div style={{ fontSize: 12, color: '#888' }}>{g.cantidad} entrada{g.cantidad > 1 ? 's' : ''} · {g.precio_entrada}€ c/u · <span style={{ fontWeight: 500, color: '#534AB7' }}>{(g.precio_entrada * g.cantidad).toFixed(0)}€</span></div>
@@ -326,7 +318,7 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
                       <div style={{ fontSize: 10, color: '#A32D2D', marginBottom: 6, fontWeight: 500 }}>DEBEN PAGAR A {g.amigos?.nombre.toUpperCase()}</div>
                       {pendientesG.map(p => (
                         <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                          <Av a={p.amigos} size={26} />
+                          <Avatar amigo={p.amigos} size={26} />
                           <span style={{ fontSize: 13, flex: 1 }}>{p.amigos?.nombre}</span>
                           <span style={{ fontSize: 12, color: '#E24B4A', fontWeight: 500 }}>{p.cantidad}€</span>
                           <button onClick={() => togglePago(p)} style={{ padding: '3px 10px', borderRadius: 20, border: 'none', background: '#FCEBEB', color: '#791F1F', fontSize: 11, fontWeight: 500, cursor: 'pointer' }}>· Pendiente</button>
@@ -339,7 +331,7 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
                       <div style={{ fontSize: 10, color: '#3B6D11', marginBottom: 6, fontWeight: 500 }}>YA PAGARON</div>
                       {cobradosG.map(p => (
                         <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, opacity: 0.6 }}>
-                          <Av a={p.amigos} size={26} />
+                          <Avatar amigo={p.amigos} size={26} />
                           <span style={{ fontSize: 13, flex: 1 }}>{p.amigos?.nombre}</span>
                           <span style={{ fontSize: 12, color: '#3B6D11', fontWeight: 500 }}>{p.cantidad}€</span>
                           <button onClick={() => togglePago(p)} style={{ padding: '3px 10px', borderRadius: 20, border: 'none', background: '#EAF3DE', color: '#27500A', fontSize: 11, fontWeight: 500, cursor: 'pointer' }}>✓ Pagado</button>

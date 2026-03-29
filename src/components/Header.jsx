@@ -1,3 +1,4 @@
+import Avatar from './Avatar'
 export default function Header({ amigos }) {
   return (
     <div style={{
@@ -12,13 +13,7 @@ export default function Header({ amigos }) {
       </div>
       <div style={{ display: 'flex', gap: 6 }}>
         {amigos.map(a => (
-          <div key={a.id} style={{
-            width: 28, height: 28, borderRadius: '50%',
-            background: a.color, color: 'white',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 10, fontWeight: 500,
-            border: '1.5px solid rgba(255,255,255,0.3)'
-          }}>{a.iniciales}</div>
+          <Avatar key={a.id} amigo={a} size={28} />
         ))}
       </div>
     </div>
