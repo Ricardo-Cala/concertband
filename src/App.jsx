@@ -62,7 +62,7 @@ export default function App() {
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 15, fontWeight: 500, marginBottom: 2 }}>{c.artista}</div>
           <div style={{ fontSize: 12, color: '#888', marginBottom: 8 }}>
-            {new Date(c.fecha).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })} · {c.recinto}, {c.ciudad}
+            {new Date(c.fecha).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} · {c.recinto}, {c.ciudad}
           </div>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             <span style={tagEstado(c.estado)}>{c.estado}</span>

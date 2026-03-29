@@ -147,7 +147,7 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 18, fontWeight: 500, color: 'white' }}>{concierto.artista}</div>
             <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)' }}>
-              {new Date(concierto.fecha).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })} · {concierto.recinto}, {concierto.ciudad}
+              {new Date(concierto.fecha).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} · {concierto.recinto}, {concierto.ciudad}
             </div>
           </div>
           <button onClick={onEditar} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', borderRadius: 8, padding: '4px 10px', fontSize: 12, cursor: 'pointer' }}>✏️ Editar</button>
