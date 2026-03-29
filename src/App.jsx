@@ -8,6 +8,7 @@ import Header from './components/Header'
 import NavBar from './components/NavBar'
 import NuevoConcierto from './components/NuevoConcierto'
 import Entradas from './components/Entradas'
+import Gastos from './components/Gastos'
 
 export default function App() {
   const [pantalla, setPantalla] = useState('inicio')
