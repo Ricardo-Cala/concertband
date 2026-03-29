@@ -127,7 +127,7 @@ export default function Grupo({ amigos, onActualizado }) {
             }}>📷</div>
             <input
               ref={el => fileRefs.current[a.id] = el}
-              type='file' accept='image/*' capture='user'
+              type='file' accept='image/*'
               style={{ display: 'none' }}
               onChange={e => subirFoto(a, e.target.files[0])}
             />
