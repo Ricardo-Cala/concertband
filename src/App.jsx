@@ -34,7 +34,15 @@ export default function App() {
     padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 500
   })
 
-  const PantallaInicio = () => (
+  cconst PantallaInicio = () => {
+  const hoy = new Date(new Date().toDateString())
+  const proximos = conciertos.filter(c => new Date(c.fecha) >= hoy)
+  const siguiente = proximos[0]
+  const diasRestantes = siguiente
+    ? Math.ceil((new Date(siguiente.fecha) - hoy) / (1000 * 60 * 60 * 24))
+    : null
+
+  return (
     <div style={{ padding: 16 }}>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
         <div style={{ background: 'white', borderRadius: 10, padding: 14 }}>
@@ -48,8 +56,37 @@ export default function App() {
           <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>Confirmados</div>
         </div>
       </div>
+
+      {siguiente && (
+        <div style={{
+          background: '#1a1a2e', borderRadius: 14, padding: 16, marginBottom: 16,
+          display: 'flex', alignItems: 'center', gap: 16
+        }}>
+          <div style={{ textAlign: 'center', flexShrink: 0 }}>
+            <div style={{ fontSize: 42, fontWeight: 500, color: '#7F77DD', lineHeight: 1 }}>
+              {diasRestantes}
+            </div>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>
+              {diasRestantes === 1 ? 'día' : 'días'}
+            </div>
+          </div>
+          <div style={{ borderLeft: '1px solid rgba(255,255,255,0.15)', paddingLeft: 16, flex: 1 }}>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 4 }}>
+              PRÓXIMO CONCIERTO
+            </div>
+            <div style={{ fontSize: 16, fontWeight: 500, color: 'white', marginBottom: 2 }}>
+              {siguiente.artista}
+            </div>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)' }}>
+              {new Date(siguiente.fecha).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })} · {siguiente.ciudad}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div style={{ fontSize: 13, fontWeight: 500, color: '#888', marginBottom: 10 }}>PRÓXIMOS CONCIERTOS</div>
-      {conciertos.filter(c => new Date(c.fecha) >= new Date(new Date().toDateString())).length === 0 && (
+
+      {proximos.length === 0 && (
         <div style={{ background: 'white', borderRadius: 12, padding: 20, textAlign: 'center', color: '#888', fontSize: 14 }}>
           Aún no hay conciertos.<br />
           <span style={{ color: '#7F77DD', cursor: 'pointer' }} onClick={() => setMostrarNuevo(true)}>
@@ -57,7 +94,8 @@ export default function App() {
           </span>
         </div>
       )}
-      {conciertos.filter(c => new Date(c.fecha) >= new Date(new Date().toDateString())).slice(0, 3).map(c => (
+
+      {proximos.slice(0, 3).map(c => (
         <div key={c.id} style={{ background: 'white', borderRadius: 12, padding: 14, marginBottom: 10, borderLeft: '3px solid #7F77DD' }}>
           <div style={{ fontSize: 15, fontWeight: 500, marginBottom: 2 }}>{c.artista}</div>
           <div style={{ fontSize: 12, color: '#888', marginBottom: 8 }}>
@@ -65,13 +103,16 @@ export default function App() {
           </div>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             <span style={tagEstado(c.estado)}>{c.estado}</span>
-            {c.transportes?.[0] && <span style={{ background: '#EEEDFE', color: '#3C3489', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 500 }}>{c.transportes[0].tipo === 'Avión' ? '✈️' : c.transportes[0].tipo === 'Coche' ? '🚗' : c.transportes[0].tipo === 'Autobús' ? '🚌' : c.transportes[0].tipo === 'AVE' ? '🚄' : '🚆'} {c.transportes[0].tipo}</span>}
-            {c.hoteles?.[0] && <span style={{ background: '#E1F5EE', color: '#085041', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 500 }}>{c.hoteles[0].nombre}</span>}
+            {c.transportes?.[0] && <span style={{ background: '#EEEDFE', color: '#3C3489', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 500 }}>
+              {c.transportes[0].tipo === 'Avión' ? '✈️' : c.transportes[0].tipo === 'Coche' ? '🚗' : c.transportes[0].tipo === 'Autobús' ? '🚌' : c.transportes[0].tipo === 'AVE' ? '🚄' : '🚆'} {c.transportes[0].tipo}
+            </span>}
+            {c.hoteles?.[0] && <span style={{ background: '#E1F5EE', color: '#085041', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 500 }}>🏨 {c.hoteles[0].nombre}</span>}
           </div>
         </div>
       ))}
     </div>
   )
+}
 
   const PantallaConciertos = () => (
   <div style={{ padding: 16 }}>
