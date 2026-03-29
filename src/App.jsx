@@ -96,7 +96,7 @@ export default function App() {
             {c.hora_apertura && <div style={{ fontSize: 12, color: '#888', marginBottom: 8 }}>Apertura: {c.hora_apertura}</div>}
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               <span style={tagEstado(c.estado)}>{c.estado}</span>
-              {c.transportes?.[0] && <span style={{ background: '#EEEDFE', color: '#3C3489', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 500 }}>🚆 {c.transportes[0].tipo === 'Avión' ? '✈️' : c.transportes[0].tipo === 'Coche' ? '🚗' : c.transportes[0].tipo === 'Autobús' ? '🚌' : c.transportes[0].tipo === 'AVE' ? '🚄' : '🚆'} {c.transportes[0].tipo}</span>}
+              {c.transportes?.[0] && <span style={{ background: '#EEEDFE', color: '#3C3489', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 500 }}> {c.transportes[0].tipo === 'Avión' ? '✈️' : c.transportes[0].tipo === 'Coche' ? '🚗' : c.transportes[0].tipo === 'Autobús' ? '🚌' : c.transportes[0].tipo === 'AVE' ? '🚄' : '🚆'} {c.transportes[0].tipo}</span>}
               {c.hoteles?.[0] && <span style={{ background: '#E1F5EE', color: '#085041', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 500 }}>🏨 {c.hoteles[0].nombre}</span>}
             </div>
           </div>
