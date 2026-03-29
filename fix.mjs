@@ -1,318 +1,221 @@
 import { writeFileSync } from 'fs'
 
-const entradas = `import { useState, useEffect } from 'react'
-import { supabase } from '../supabase'
+const code = `import { useState, useEffect } from 'react'
+import { supabase } from './supabase'
+import Header from './components/Header'
+import FichaConcierto from './components/FichaConcierto'
+import EditarConcierto from './components/EditarConcierto'
+import NuevoConcierto from './components/NuevoConcierto'
+import Grupo from './components/Grupo'
 
-export default function Entradas({ conciertos, amigos }) {
-  const [concierto, setConcierto] = useState('')
-  const [subtab, setSubtab] = useState('entradas')
-  const [entradas, setEntradas] = useState([])
-  const [gastos, setGastos] = useState([])
-  const [pagos, setPagos] = useState([])
-  const [asistentes, setAsistentes] = useState([])
-  const [mostrarFormEntrada, setMostrarFormEntrada] = useState(false)
-  const [mostrarFormGasto, setMostrarFormGasto] = useState(false)
-  const [formEntrada, setFormEntrada] = useState({ amigo_id: '', cantidad: 1, pagada: false })
-  const [formGasto, setFormGasto] = useState({ comprador_id: '', precio_entrada: '', cantidad: 1 })
+export default function App() {
+  const [pantalla, setPantalla] = useState('inicio')
+  const [amigos, setAmigos] = useState([])
+  const [conciertos, setConciertos] = useState([])
+  const [conciertoSeleccionado, setConciertoSeleccionado] = useState(null)
+  const [conciertoEditando, setConciertoEditando] = useState(null)
+  const [mostrarNuevo, setMostrarNuevo] = useState(false)
 
-  useEffect(() => { if (concierto) cargarDatos() }, [concierto])
+  useEffect(() => {
+    supabase.from('amigos').select('*').then(({ data }) => data && setAmigos(data))
+    cargarConciertos()
+    const canal = supabase
+      .channel('cambios-globales')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'conciertos' }, () => cargarConciertos())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'transportes' }, () => cargarConciertos())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'hoteles' }, () => cargarConciertos())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'amigos' }, () => {
+        supabase.from('amigos').select('*').then(({ data }) => data && setAmigos(data))
+      })
+      .subscribe()
+    return () => supabase.removeChannel(canal)
+  }, [])
 
-  const cargarDatos = async () => {
-    const [e, a, g] = await Promise.all([
-      supabase.from('entradas').select('*, amigos(nombre, iniciales, color)').eq('concierto_id', concierto),
-      supabase.from('asistentes').select('*, amigos(nombre, iniciales, color)').eq('concierto_id', concierto).eq('confirmado', true),
-      supabase.from('gastos').select('*, amigos(nombre, iniciales, color)').eq('concierto_id', concierto),
-    ])
-    setEntradas(e.data || [])
-    setAsistentes(a.data || [])
-    setGastos(g.data || [])
-    if (g.data && g.data.length > 0) {
-      const { data: p } = await supabase.from('pagos').select('*, amigos(nombre, iniciales, color)').in('gasto_id', g.data.map(x => x.id))
-      setPagos(p || [])
-    } else {
-      setPagos([])
-    }
+  const cargarConciertos = async () => {
+    const { data } = await supabase.from('conciertos').select(\`*, transportes(*), hoteles(*)\`).order('fecha')
+    if (data) setConciertos(data)
   }
 
-  const guardarEntrada = async () => {
-    if (!formEntrada.amigo_id) { alert('Selecciona un amigo'); return }
-    await supabase.from('entradas').insert([{ concierto_id: concierto, amigo_id: formEntrada.amigo_id, cantidad: parseInt(formEntrada.cantidad), pagada: formEntrada.pagada }])
-    setMostrarFormEntrada(false)
-    setFormEntrada({ amigo_id: '', cantidad: 1, pagada: false })
-    cargarDatos()
+  const hoy = new Date(new Date().toDateString())
+  const proximos = conciertos.filter(c => new Date(c.fecha) >= hoy)
+  const pasados = conciertos.filter(c => new Date(c.fecha) < hoy)
+
+  const tagEstado = (estado) => ({
+    background: estado === 'confirmado' ? '#EAF3DE' : '#FAEEDA',
+    color: estado === 'confirmado' ? '#27500A' : '#633806',
+    padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 500
+  })
+
+  const iconTransporte = (tipo) => {
+    if (tipo === 'Avión') return '✈️'
+    if (tipo === 'Coche') return '🚗'
+    if (tipo === 'Autobús') return '🚌'
+    if (tipo === 'AVE') return '🚄'
+    return '🚆'
   }
 
-  const togglePagadaEntrada = async (e) => {
-    await supabase.from('entradas').update({ pagada: !e.pagada }).eq('id', e.id)
-    cargarDatos()
-  }
-
-  const cambiarCantidad = async (e, cantidad) => {
-    if (cantidad < 1) return
-    await supabase.from('entradas').update({ cantidad }).eq('id', e.id)
-    cargarDatos()
-  }
-
-  const eliminarEntrada = async (id) => {
-    await supabase.from('entradas').delete().eq('id', id)
-    cargarDatos()
-  }
-
-  const guardarGasto = async () => {
-    if (!formGasto.comprador_id || !formGasto.precio_entrada) { alert('Rellena comprador y precio'); return }
-    const { data: gasto } = await supabase.from('gastos').insert([{
-      concierto_id: concierto,
-      comprador_id: formGasto.comprador_id,
-      precio_entrada: parseFloat(formGasto.precio_entrada),
-      cantidad: parseInt(formGasto.cantidad),
-    }]).select().single()
-    if (gasto) {
-      const otros = asistentes.filter(a => a.amigo_id !== formGasto.comprador_id)
-      if (otros.length > 0) {
-        await supabase.from('pagos').insert(otros.map(a => ({
-          gasto_id: gasto.id, pagador_id: a.amigo_id,
-          cantidad: parseFloat(formGasto.precio_entrada), pagado: false,
-        })))
-      }
-    }
-    setMostrarFormGasto(false)
-    setFormGasto({ comprador_id: '', precio_entrada: '', cantidad: 1 })
-    cargarDatos()
-  }
-
-  const togglePago = async (p) => {
-    await supabase.from('pagos').update({ pagado: !p.pagado }).eq('id', p.id)
-    cargarDatos()
-  }
-
-  const borrarGasto = async (id) => {
-    await supabase.from('gastos').delete().eq('id', id)
-    cargarDatos()
-  }
-
-  const amigosConEntrada = entradas.map(e => e.amigo_id)
-  const amigosDisponibles = amigos.filter(a => !amigosConEntrada.includes(a.id))
-  const totalEntradas = entradas.reduce((s, e) => s + e.cantidad, 0)
-  const entradasPagadas = entradas.filter(e => e.pagada).reduce((s, e) => s + e.cantidad, 0)
-  const totalComprado = gastos.reduce((s, g) => s + g.precio_entrada * g.cantidad, 0)
-  const totalPendiente = pagos.filter(p => !p.pagado).reduce((s, p) => s + p.cantidad, 0)
-  const totalCobrado = pagos.filter(p => p.pagado).reduce((s, p) => s + p.cantidad, 0)
-
-  const Av = ({ a, size = 32 }) => (
-    <div style={{
-      width: size, height: size, borderRadius: '50%',
-      background: a?.color, color: 'white', flexShrink: 0,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontSize: size > 28 ? 12 : 9, fontWeight: 500,
-    }}>{a?.iniciales}</div>
+  const TarjetaConcierto = ({ c, opacidad = 1 }) => (
+    <div onClick={() => { setConciertoSeleccionado(c) }} style={{
+      background: 'white', borderRadius: 12, padding: 14, marginBottom: 10,
+      borderLeft: '3px solid #7F77DD', cursor: 'pointer', opacity: opacidad,
+      transition: 'opacity 0.15s'
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 15, fontWeight: 500, marginBottom: 2 }}>{c.artista}</div>
+          <div style={{ fontSize: 12, color: '#888', marginBottom: 8 }}>
+            {new Date(c.fecha).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })} · {c.recinto}, {c.ciudad}
+          </div>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            <span style={tagEstado(c.estado)}>{c.estado}</span>
+            {c.transportes?.[0] && <span style={{ background: '#EEEDFE', color: '#3C3489', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 500 }}>{iconTransporte(c.transportes[0].tipo)} {c.transportes[0].tipo}</span>}
+            {c.hoteles?.[0] && <span style={{ background: '#E1F5EE', color: '#085041', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 500 }}>🏨 {c.hoteles[0].nombre}</span>}
+          </div>
+        </div>
+        <span style={{ color: '#7F77DD', fontSize: 20, marginLeft: 8 }}>›</span>
+      </div>
+    </div>
   )
 
-  return (
-    <div style={{ padding: 16 }}>
-      <div style={{ fontSize: 13, fontWeight: 500, color: '#888', marginBottom: 12 }}>ENTRADAS Y PAGOS</div>
-
-      <div style={{ marginBottom: 12 }}>
-        <select value={concierto} onChange={e => setConcierto(e.target.value)}
-          style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #ddd', fontSize: 14, background: 'white' }}>
-          <option value=''>— Elige un concierto —</option>
-          {conciertos.map(c => (
-            <option key={c.id} value={c.id}>{c.artista} · {new Date(c.fecha).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}</option>
-          ))}
-        </select>
-      </div>
-
-      {concierto && (
-        <div>
-          <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
-            {['entradas', 'pagos'].map(t => (
-              <button key={t} onClick={() => setSubtab(t)} style={{
-                flex: 1, padding: '8px', borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: 'pointer',
-                background: subtab === t ? '#EEEDFE' : 'white',
-                color: subtab === t ? '#3C3489' : '#888',
-                border: subtab === t ? '1px solid #AFA9EC' : '1px solid #ddd',
-              }}>{t === 'entradas' ? '🎟 Entradas' : '💸 Pagos'}</button>
-            ))}
+  const PantallaInicio = () => {
+    const siguiente = proximos[0]
+    const diasRestantes = siguiente ? Math.ceil((new Date(siguiente.fecha) - hoy) / (1000 * 60 * 60 * 24)) : null
+    return (
+      <div style={{ padding: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
+          <div style={{ background: 'white', borderRadius: 10, padding: 14 }}>
+            <div style={{ fontSize: 24, fontWeight: 500 }}>{conciertos.length}</div>
+            <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>Conciertos totales</div>
           </div>
-
-          {subtab === 'entradas' && (
-            <div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 14 }}>
-                <div style={{ background: '#EEEDFE', borderRadius: 10, padding: 10, textAlign: 'center' }}>
-                  <div style={{ fontSize: 22, fontWeight: 500, color: '#3C3489' }}>{totalEntradas}</div>
-                  <div style={{ fontSize: 10, color: '#534AB7' }}>Entradas totales</div>
-                </div>
-                <div style={{ background: entradasPagadas === totalEntradas && totalEntradas > 0 ? '#EAF3DE' : '#FAEEDA', borderRadius: 10, padding: 10, textAlign: 'center' }}>
-                  <div style={{ fontSize: 22, fontWeight: 500, color: entradasPagadas === totalEntradas && totalEntradas > 0 ? '#27500A' : '#633806' }}>{entradasPagadas}/{totalEntradas}</div>
-                  <div style={{ fontSize: 10, color: entradasPagadas === totalEntradas && totalEntradas > 0 ? '#3B6D11' : '#854F0B' }}>Pagadas</div>
-                </div>
-              </div>
-
-              {entradas.map(e => (
-                <div key={e.id} style={{ background: 'white', borderRadius: 12, padding: '12px 14px', marginBottom: 8, border: \`1px solid \${e.pagada ? '#C0DD97' : '#ddd'}\` }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <Av a={e.amigos} />
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 14, fontWeight: 500 }}>{e.amigos?.nombre}</div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-                        <button onClick={() => cambiarCantidad(e, e.cantidad - 1)} style={{ width: 24, height: 24, borderRadius: '50%', border: '1px solid #ddd', background: 'white', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>−</button>
-                        <span style={{ fontSize: 13, minWidth: 20, textAlign: 'center' }}>{e.cantidad}</span>
-                        <button onClick={() => cambiarCantidad(e, e.cantidad + 1)} style={{ width: 24, height: 24, borderRadius: '50%', border: '1px solid #ddd', background: 'white', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>+</button>
-                        <span style={{ fontSize: 11, color: '#888' }}>entrada{e.cantidad > 1 ? 's' : ''}</span>
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
-                      <button onClick={() => togglePagadaEntrada(e)} style={{
-                        padding: '4px 10px', borderRadius: 20, border: 'none', fontSize: 11, fontWeight: 500, cursor: 'pointer',
-                        background: e.pagada ? '#EAF3DE' : '#FAEEDA',
-                        color: e.pagada ? '#27500A' : '#633806',
-                      }}>{e.pagada ? '✓ Pagada' : '· Pendiente'}</button>
-                      <button onClick={() => eliminarEntrada(e.id)} style={{ background: 'none', border: 'none', fontSize: 11, color: '#ccc', cursor: 'pointer' }}>quitar</button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-
-              {!mostrarFormEntrada && amigosDisponibles.length > 0 && (
-                <div style={{ marginTop: 12 }}>
-                  <div style={{ fontSize: 12, color: '#888', marginBottom: 8 }}>Añadir persona:</div>
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    {amigosDisponibles.map(a => (
-                      <button key={a.id} onClick={() => { setFormEntrada(f => ({ ...f, amigo_id: a.id })); setMostrarFormEntrada(true) }} style={{
-                        display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px',
-                        borderRadius: 20, border: '1px solid #ddd', background: 'white', fontSize: 13, cursor: 'pointer'
-                      }}>
-                        <div style={{ width: 20, height: 20, borderRadius: '50%', background: a.color, color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 500 }}>{a.iniciales}</div>
-                        {a.nombre}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {mostrarFormEntrada && (
-                <div style={{ background: 'white', borderRadius: 12, padding: 14, marginTop: 12, border: '1px solid #7F77DD' }}>
-                  <div style={{ fontSize: 12, fontWeight: 500, color: '#7F77DD', marginBottom: 10 }}>AÑADIR ENTRADA</div>
-                  <div style={{ marginBottom: 10 }}>
-                    <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 4 }}>Cantidad</label>
-                    <input type='number' value={formEntrada.cantidad} min='1' onChange={e => setFormEntrada(f => ({ ...f, cantidad: e.target.value }))}
-                      style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #ddd', fontSize: 14 }} />
-                  </div>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button onClick={() => setMostrarFormEntrada(false)} style={{ flex: 1, padding: 10, borderRadius: 8, border: '1px solid #ddd', background: 'white', fontSize: 13 }}>Cancelar</button>
-                    <button onClick={guardarEntrada} style={{ flex: 1, padding: 10, borderRadius: 8, border: 'none', background: '#7F77DD', color: 'white', fontSize: 13, fontWeight: 500 }}>Guardar</button>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {subtab === 'pagos' && (
-            <div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 14 }}>
-                <div style={{ background: '#EEEDFE', borderRadius: 10, padding: 10, textAlign: 'center' }}>
-                  <div style={{ fontSize: 16, fontWeight: 500, color: '#3C3489' }}>{totalComprado.toFixed(0)}€</div>
-                  <div style={{ fontSize: 10, color: '#534AB7' }}>Total</div>
-                </div>
-                <div style={{ background: '#FCEBEB', borderRadius: 10, padding: 10, textAlign: 'center' }}>
-                  <div style={{ fontSize: 16, fontWeight: 500, color: '#791F1F' }}>{totalPendiente.toFixed(0)}€</div>
-                  <div style={{ fontSize: 10, color: '#A32D2D' }}>Pendiente</div>
-                </div>
-                <div style={{ background: '#EAF3DE', borderRadius: 10, padding: 10, textAlign: 'center' }}>
-                  <div style={{ fontSize: 16, fontWeight: 500, color: '#27500A' }}>{totalCobrado.toFixed(0)}€</div>
-                  <div style={{ fontSize: 10, color: '#3B6D11' }}>Cobrado</div>
-                </div>
-              </div>
-
-              {gastos.length === 0 && !mostrarFormGasto && (
-                <div style={{ background: 'white', borderRadius: 12, padding: 20, textAlign: 'center', color: '#888', marginBottom: 12 }}>
-                  Sin compras registradas aún
-                </div>
-              )}
-
-              {gastos.map(g => {
-                const pg = pagos.filter(p => p.gasto_id === g.id)
-                const pendientes = pg.filter(p => !p.pagado)
-                const cobrados = pg.filter(p => p.pagado)
-                return (
-                  <div key={g.id} style={{ background: 'white', borderRadius: 12, padding: 14, marginBottom: 12, border: '1px solid #eee' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                      <Av a={g.amigos} />
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 14, fontWeight: 500 }}>{g.amigos?.nombre} compró</div>
-                        <div style={{ fontSize: 12, color: '#888' }}>{g.cantidad} entrada{g.cantidad > 1 ? 's' : ''} · {g.precio_entrada}€ c/u · <span style={{ fontWeight: 500, color: '#534AB7' }}>{(g.precio_entrada * g.cantidad).toFixed(0)}€</span></div>
-                      </div>
-                      <button onClick={() => borrarGasto(g.id)} style={{ background: 'none', border: 'none', fontSize: 16, cursor: 'pointer', color: '#ccc' }}>🗑️</button>
-                    </div>
-                    {pendientes.length > 0 && (
-                      <div style={{ marginBottom: 8 }}>
-                        <div style={{ fontSize: 10, color: '#A32D2D', marginBottom: 6, fontWeight: 500 }}>DEBEN PAGAR A {g.amigos?.nombre.toUpperCase()}</div>
-                        {pendientes.map(p => (
-                          <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                            <Av a={p.amigos} size={26} />
-                            <span style={{ fontSize: 13, flex: 1 }}>{p.amigos?.nombre}</span>
-                            <span style={{ fontSize: 12, color: '#E24B4A', fontWeight: 500 }}>{p.cantidad}€</span>
-                            <button onClick={() => togglePago(p)} style={{ padding: '3px 10px', borderRadius: 20, border: 'none', background: '#FCEBEB', color: '#791F1F', fontSize: 11, fontWeight: 500, cursor: 'pointer' }}>· Pendiente</button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {cobrados.length > 0 && (
-                      <div>
-                        <div style={{ fontSize: 10, color: '#3B6D11', marginBottom: 6, fontWeight: 500 }}>YA PAGARON</div>
-                        {cobrados.map(p => (
-                          <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, opacity: 0.6 }}>
-                            <Av a={p.amigos} size={26} />
-                            <span style={{ fontSize: 13, flex: 1 }}>{p.amigos?.nombre}</span>
-                            <span style={{ fontSize: 12, color: '#3B6D11', fontWeight: 500 }}>{p.cantidad}€</span>
-                            <button onClick={() => togglePago(p)} style={{ padding: '3px 10px', borderRadius: 20, border: 'none', background: '#EAF3DE', color: '#27500A', fontSize: 11, fontWeight: 500, cursor: 'pointer' }}>✓ Pagado</button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-
-              {mostrarFormGasto && (
-                <div style={{ background: 'white', borderRadius: 12, padding: 16, marginBottom: 12, border: '1px solid #7F77DD' }}>
-                  <div style={{ fontSize: 12, fontWeight: 500, color: '#7F77DD', marginBottom: 12 }}>NUEVO COMPRADOR</div>
-                  <div style={{ marginBottom: 12 }}>
-                    <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 4 }}>¿Quién compró?</label>
-                    <select value={formGasto.comprador_id} onChange={e => setFormGasto(f => ({ ...f, comprador_id: e.target.value }))}
-                      style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #ddd', fontSize: 14, background: 'white' }}>
-                      <option value=''>— Selecciona —</option>
-                      {amigos.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
-                    </select>
-                  </div>
-                  <div style={{ marginBottom: 12 }}>
-                    <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 4 }}>Precio por entrada (€)</label>
-                    <input type='number' value={formGasto.precio_entrada} onChange={e => setFormGasto(f => ({ ...f, precio_entrada: e.target.value }))}
-                      placeholder='Ej: 65' style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #ddd', fontSize: 14 }} />
-                  </div>
-                  <div style={{ marginBottom: 16 }}>
-                    <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 4 }}>Entradas compradas</label>
-                    <input type='number' value={formGasto.cantidad} min='1' onChange={e => setFormGasto(f => ({ ...f, cantidad: e.target.value }))}
-                      style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #ddd', fontSize: 14 }} />
-                  </div>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button onClick={() => setMostrarFormGasto(false)} style={{ flex: 1, padding: 10, borderRadius: 8, border: '1px solid #ddd', background: 'white', fontSize: 13 }}>Cancelar</button>
-                    <button onClick={guardarGasto} style={{ flex: 1, padding: 10, borderRadius: 8, border: 'none', background: '#7F77DD', color: 'white', fontSize: 13, fontWeight: 500 }}>Guardar</button>
-                  </div>
-                </div>
-              )}
-
-              {!mostrarFormGasto && (
-                <button onClick={() => setMostrarFormGasto(true)} style={{ width: '100%', padding: 12, borderRadius: 10, background: 'white', color: '#7F77DD', border: '1px solid #7F77DD', fontSize: 14, fontWeight: 500 }}>
-                  + Añadir comprador
-                </button>
-              )}
-            </div>
-          )}
+          <div style={{ background: 'white', borderRadius: 10, padding: 14 }}>
+            <div style={{ fontSize: 24, fontWeight: 500 }}>{conciertos.filter(c => c.estado === 'confirmado').length}</div>
+            <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>Confirmados</div>
+          </div>
         </div>
+
+        {siguiente && (
+          <div style={{ background: '#1a1a2e', borderRadius: 14, padding: 16, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 16, cursor: 'pointer' }}
+            onClick={() => setConciertoSeleccionado(siguiente)}>
+            <div style={{ textAlign: 'center', flexShrink: 0 }}>
+              <div style={{ fontSize: 42, fontWeight: 500, color: '#7F77DD', lineHeight: 1 }}>{diasRestantes}</div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>{diasRestantes === 1 ? 'día' : 'días'}</div>
+            </div>
+            <div style={{ borderLeft: '1px solid rgba(255,255,255,0.15)', paddingLeft: 16, flex: 1 }}>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 4 }}>PRÓXIMO CONCIERTO</div>
+              <div style={{ fontSize: 16, fontWeight: 500, color: 'white', marginBottom: 2 }}>{siguiente.artista}</div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)' }}>
+                {new Date(siguiente.fecha).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })} · {siguiente.ciudad}
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div style={{ fontSize: 13, fontWeight: 500, color: '#888', marginBottom: 10 }}>PRÓXIMOS CONCIERTOS</div>
+        {proximos.length === 0 && (
+          <div style={{ background: 'white', borderRadius: 12, padding: 20, textAlign: 'center', color: '#888', fontSize: 14 }}>
+            Aún no hay conciertos.<br />
+            <span style={{ color: '#7F77DD', cursor: 'pointer' }} onClick={() => setMostrarNuevo(true)}>Añade el primero</span>
+          </div>
+        )}
+        {proximos.slice(0, 3).map(c => <TarjetaConcierto key={c.id} c={c} />)}
+      </div>
+    )
+  }
+
+  const PantallaConciertos = () => (
+    <div style={{ padding: 16 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+        <div style={{ fontSize: 13, fontWeight: 500, color: '#888' }}>CONCIERTOS</div>
+        <button onClick={() => setMostrarNuevo(true)} style={{ background: '#7F77DD', color: 'white', border: 'none', borderRadius: 20, padding: '6px 14px', fontSize: 12, fontWeight: 500, cursor: 'pointer' }}>+ Nuevo</button>
+      </div>
+      {proximos.length > 0 && (
+        <>
+          <div style={{ fontSize: 11, color: '#7F77DD', fontWeight: 500, marginBottom: 8 }}>PRÓXIMOS</div>
+          {proximos.map(c => <TarjetaConcierto key={c.id} c={c} />)}
+        </>
+      )}
+      {pasados.length > 0 && (
+        <>
+          <div style={{ fontSize: 11, color: '#888', fontWeight: 500, marginBottom: 8, marginTop: 8 }}>PASADOS</div>
+          {pasados.map(c => <TarjetaConcierto key={c.id} c={c} opacidad={0.5} />)}
+        </>
+      )}
+      {conciertos.length === 0 && (
+        <div style={{ background: 'white', borderRadius: 12, padding: 20, textAlign: 'center', color: '#888' }}>No hay conciertos todavía</div>
+      )}
+    </div>
+  )
+
+  if (conciertoEditando) return (
+    <div style={{ maxWidth: 390, margin: '0 auto', background: 'white', minHeight: '100vh' }}>
+      <EditarConcierto
+        concierto={conciertoEditando}
+        amigos={amigos}
+        onGuardado={() => { setConciertoEditando(null); setConciertoSeleccionado(null); cargarConciertos() }}
+        onCancelar={() => setConciertoEditando(null)}
+      />
+    </div>
+  )
+
+  if (conciertoSeleccionado) return (
+    <FichaConcierto
+      concierto={conciertoSeleccionado}
+      amigos={amigos}
+      onVolver={() => setConciertoSeleccionado(null)}
+      onEditar={() => setConciertoEditando(conciertoSeleccionado)}
+    />
+  )
+
+  if (mostrarNuevo) return (
+    <div style={{ maxWidth: 390, margin: '0 auto', background: 'white', minHeight: '100vh' }}>
+      <NuevoConcierto
+        amigos={amigos}
+        onGuardado={() => { setMostrarNuevo(false); cargarConciertos() }}
+        onCancelar={() => setMostrarNuevo(false)}
+      />
+    </div>
+  )
+
+  const pantallas = {
+    inicio: <PantallaInicio />,
+    conciertos: <PantallaConciertos />,
+    grupo: <Grupo amigos={amigos} onActualizado={() => supabase.from('amigos').select('*').then(({ data }) => data && setAmigos(data))} />
+  }
+
+  const tabs = [
+    { id: 'inicio', label: 'Inicio', icon: '★' },
+    { id: 'conciertos', label: 'Conciertos', icon: '♪' },
+    { id: 'grupo', label: 'Grupo', icon: '👥' },
+  ]
+
+  return (
+    <div style={{ maxWidth: 390, margin: '0 auto', background: '#f5f5f7', minHeight: '100vh' }}>
+      <Header amigos={amigos} />
+      <div style={{ display: 'flex', borderBottom: '1px solid #e5e5e5', background: 'white', position: 'sticky', top: 0, zIndex: 10 }}>
+        {tabs.map(t => (
+          <button key={t.id} onClick={() => setPantalla(t.id)} style={{
+            flex: 1, padding: '10px 4px', fontSize: 11, background: 'none', border: 'none', cursor: 'pointer',
+            borderBottom: pantalla === t.id ? '2px solid #7F77DD' : '2px solid transparent',
+            color: pantalla === t.id ? '#7F77DD' : '#888',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3
+          }}>
+            <span style={{ fontSize: 16 }}>{t.icon}</span>
+            {t.label}
+          </button>
+        ))}
+      </div>
+      {pantallas[pantalla]}
+      {pantalla === 'conciertos' && (
+        <button onClick={() => setMostrarNuevo(true)} style={{
+          position: 'fixed', bottom: 24, right: 24,
+          width: 48, height: 48, borderRadius: '50%',
+          background: '#7F77DD', color: 'white', border: 'none',
+          fontSize: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
+        }}>+</button>
       )}
     </div>
   )
 }`
 
-writeFileSync('src/components/Entradas.jsx', entradas)
-console.log('Entradas.jsx unificado correctamente')
+writeFileSync('src/App.jsx', code)
+console.log('App.jsx reescrito correctamente')
