@@ -105,6 +105,25 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
     mostrarToast('Comprador eliminado')
   }
 
+  const subirPDF = async (gasto, archivo) => {
+    if (!archivo) return
+    mostrarToast('Subiendo PDF...')
+    const path = gasto.id + '.pdf'
+    await supabase.storage.from('entradas-pdf').upload(path, archivo, { upsert: true })
+    const { data } = supabase.storage.from('entradas-pdf').getPublicUrl(path)
+    await supabase.from('gastos').update({ pdf_url: data.publicUrl + '?t=' + Date.now() }).eq('id', gasto.id)
+    cargarDatos()
+    mostrarToast('PDF subido correctamente')
+  }
+
+  const borrarPDF = async (gasto) => {
+    const path = gasto.id + '.pdf'
+    await supabase.storage.from('entradas-pdf').remove([path])
+    await supabase.from('gastos').update({ pdf_url: null }).eq('id', gasto.id)
+    cargarDatos()
+    mostrarToast('PDF eliminado')
+  }
+
   const iconTransporte = (tipo) => {
     if (tipo === 'Avión') return '✈️'
     if (tipo === 'Coche') return '🚗'
@@ -240,7 +259,29 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
                           <div style={{ fontSize: 14, fontWeight: 500 }}>{g.amigos?.nombre} compró</div>
                           <div style={{ fontSize: 12, color: '#888' }}>{g.cantidad} entrada{g.cantidad > 1 ? 's' : ''} · {Number(g.precio_entrada).toFixed(2)}€ c/u · <span style={{ fontWeight: 500, color: '#534AB7' }}>{(g.precio_entrada * g.cantidad).toFixed(2)}€ total</span></div>
                         </div>
-                        <button onClick={() => borrarGasto(g.id)} style={{ background: 'none', border: 'none', fontSize: 16, cursor: 'pointer', color: '#ccc' }}>🗑️</button>
+                        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                          {g.pdf_url ? (
+                            <div style={{ display: 'flex', gap: 4 }}>
+                              <button onClick={() => window.open(g.pdf_url, '_blank')} style={{
+                                background: '#EEEDFE', border: 'none', borderRadius: 8,
+                                padding: '4px 10px', fontSize: 11, color: '#3C3489', cursor: 'pointer', fontWeight: 500
+                              }}>📄 Ver PDF</button>
+                              <button onClick={() => borrarPDF(g)} style={{
+                                background: 'none', border: 'none', fontSize: 12, color: '#ccc', cursor: 'pointer'
+                              }}>✕</button>
+                            </div>
+                          ) : (
+                            <label style={{
+                              background: '#f0f0f0', border: 'none', borderRadius: 8,
+                              padding: '4px 10px', fontSize: 11, color: '#888', cursor: 'pointer'
+                            }}>
+                              📎 Subir PDF
+                              <input type='file' accept='application/pdf' style={{ display: 'none' }}
+                                onChange={e => subirPDF(g, e.target.files[0])} />
+                            </label>
+                          )}
+                          <button onClick={() => borrarGasto(g.id)} style={{ background: 'none', border: 'none', fontSize: 16, cursor: 'pointer', color: '#ccc' }}>🗑️</button>
+                        </div>
                       </div>
                       {pendientesG.length > 0 && (
                         <div style={{ marginBottom: 8 }}>
