@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../supabase'
 import Avatar from './Avatar'
 import Toast from './Toast'
+import Setlist from './Setlist'
+import Setlist from './Setlist'
 
 export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }) {
   const [subtab, setSubtab] = useState('asistencia')
@@ -372,6 +374,16 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
           </div>
         )}
       </div>
+      {subtab === 'setlist' && (
+        <div style={{ padding: 16 }}>
+          <Setlist concierto={concierto} onActualizado={() => {}} />
+        </div>
+      )}
+      {subtab === 'setlist' && (
+        <div style={{ padding: 16 }}>
+          <Setlist concierto={concierto} onActualizado={() => {}} />
+        </div>
+      )}
       {toast && <Toast mensaje={toast.mensaje} tipo={toast.tipo} onClose={() => setToast(null)} />}
     </div>
   )
