@@ -206,6 +206,8 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
             {amigos.map(a => (
               <div key={a.id} style={{
                 background: 'white', borderRadius: 12, padding: '12px 14px', marginBottom: 8, border: '1px solid #eee',
+                background: getEstado(a.id) === 'va' ? '#EAF3DE' : getEstado(a.id) === 'nova' ? '#FCEBEB' : 'white',
+                background: getEstado(a.id) === 'va' ? '#EAF3DE' : getEstado(a.id) === 'nova' ? '#FCEBEB' : 'white',
                 borderLeft: `3px solid ${getEstado(a.id) === 'va' ? '#639922' : getEstado(a.id) === 'nova' ? '#E24B4A' : '#FAC775'}`
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
