@@ -295,7 +295,7 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
                                 padding: '4px 10px', fontSize: 11, color: '#888', cursor: 'pointer',
                                 display: 'flex', alignItems: 'center', gap: 4
                               }}>
-                                📎 Subir
+                                📎 Subir entradas
                                 <input type='file' accept='application/pdf,image/*' style={{ display: 'none' }}
                                   onChange={e => subirEntrada(g, e.target.files[0])} />
                               </label>
