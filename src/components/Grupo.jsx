@@ -113,8 +113,8 @@ export default function Grupo({ amigos, onActualizado }) {
               <option value=''>Mes</option>
               <option value='1'>Enero</option><option value='2'>Febrero</option><option value='3'>Marzo</option><option value='4'>Abril</option><option value='5'>Mayo</option><option value='6'>Junio</option><option value='7'>Julio</option><option value='8'>Agosto</option><option value='9'>Septiembre</option><option value='10'>Octubre</option><option value='11'>Noviembre</option><option value='12'>Diciembre</option>
             </select>
-            <input type='number' value={f.anio} onChange={e => setF(x => ({ ...x, anio: e.target.value }))}
-              placeholder='Año' min='1920' max='2010'
+            <input type='text' value={f.anio} onChange={e => setF(x => ({ ...x, anio: e.target.value.replace(/\D/g,'').slice(0,4) }))}
+              placeholder='Año' inputMode='numeric'
               style={{ padding: '8px 6px', borderRadius: 8, border: '1px solid #ddd', fontSize: 14, textAlign: 'center' }} />
           </div>
         </div>
@@ -134,7 +134,7 @@ export default function Grupo({ amigos, onActualizado }) {
         <div style={{ width: 52, height: 52, borderRadius: '50%', background: f.color, color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 500 }}>{f.iniciales || '?'}</div>
         <div>
           <div style={{ fontSize: 13, fontWeight: 500 }}>{f.nombre || 'Sin nombre'}</div>
-          {f.dia && f.mes && <div style={{ fontSize: 12, color: '#888' }}>🎂 {f.dia} de Enero,Febrero,Marzo,Abril,Mayo,Junio,Julio,Agosto,Septiembre,Octubre,Noviembre,Diciembre[parseInt(f.mes)-1] {f.anio && `de ${f.anio}`}</div>}
+          {f.dia && f.mes && <div style={{ fontSize: 12, color: '#888' }}>🎂 {f.dia} de {['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][parseInt(f.mes)-1]} {f.anio && `de ${f.anio}`}</div>}
         </div>
       </div>
       <button onClick={onGuardar} style={{ width: '100%', padding: 12, borderRadius: 10, background: '#7F77DD', color: 'white', border: 'none', fontSize: 15, fontWeight: 500, cursor: 'pointer' }}>
