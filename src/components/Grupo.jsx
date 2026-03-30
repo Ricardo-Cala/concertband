@@ -113,8 +113,17 @@ export default function Grupo({ amigos, onActualizado }) {
               <option value=''>Mes</option>
               <option value='1'>Enero</option><option value='2'>Febrero</option><option value='3'>Marzo</option><option value='4'>Abril</option><option value='5'>Mayo</option><option value='6'>Junio</option><option value='7'>Julio</option><option value='8'>Agosto</option><option value='9'>Septiembre</option><option value='10'>Octubre</option><option value='11'>Noviembre</option><option value='12'>Diciembre</option>
             </select>
-            <input type='text' value={f.anio} onChange={e => setF(x => ({ ...x, anio: e.target.value.replace(/\D/g,'').slice(0,4) }))}
-              placeholder='Año' inputMode='numeric'
+            <input
+              type='text'
+              value={f.anio}
+              onChange={e => {
+                const v = e.target.value.replace(/[^0-9]/g, '')
+                if (v.length <= 4) setF(x => ({ ...x, anio: v }))
+              }}
+              placeholder='Año'
+              inputMode='numeric'
+              maxLength={4}
+              autoComplete='off'
               style={{ padding: '8px 6px', borderRadius: 8, border: '1px solid #ddd', fontSize: 14, textAlign: 'center' }} />
           </div>
         </div>
