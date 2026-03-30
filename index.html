@@ -13,7 +13,27 @@
     <meta name="apple-mobile-web-app-title" content="BOLOS GRUPIIII">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/icon.png">
-  </head>
+    <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').then(reg => {
+        reg.addEventListener('updatefound', () => {
+          const newSW = reg.installing
+          newSW.addEventListener('statechange', () => {
+            if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+              if (confirm('Hay una versión nueva disponible. ¿Actualizar ahora?')) {
+                newSW.postMessage({ type: 'SKIP_WAITING' })
+                window.location.reload()
+              }
+            }
+          })
+        })
+      })
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        window.location.reload()
+      })
+    }
+  </script>
+</head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
