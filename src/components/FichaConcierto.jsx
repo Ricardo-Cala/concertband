@@ -1,9 +1,7 @@
-import Setlist from './Setlist'
 import { useState, useEffect } from 'react'
 import { supabase } from '../supabase'
 import Avatar from './Avatar'
 import Toast from './Toast'
-import Setlist from './Setlist'
 import Setlist from './Setlist'
 
 export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }) {
@@ -121,7 +119,6 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
   const van = amigos.filter(a => getEstado(a.id) === 'va')
   const novan = amigos.filter(a => getEstado(a.id) === 'nova')
   const pendientes = amigos.filter(a => getEstado(a.id) === 'pendiente')
-  const amigosParaSeleccionar = amigos
 
   const resumenPorAmigo = amigos.map(amigo => {
     const deudas = pagos.filter(p => p.pagador_id === amigo.id && !p.pagado)
@@ -134,8 +131,6 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
     })
     return { amigo, totalDebe, detalleDeudas, pagados }
   }).filter(r => r.totalDebe > 0 || r.pagados.length > 0)
-
-  const Av = ({ a, size = 34 }) => <Avatar amigo={a} size={size} />
 
   return (
     <div style={{ maxWidth: 390, margin: '0 auto', background: 'white', minHeight: '100vh' }}>
@@ -160,24 +155,19 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
       <div style={{ display: 'flex', borderBottom: '0.5px solid #eee', background: 'white' }}>
         {['asistencia', 'entradas', 'setlist'].map(t => (
           <button key={t} onClick={() => setSubtab(t)} style={{
-            flex: 1, padding: '10px 4px', fontSize: 12, fontWeight: 500,
+            flex: 1, padding: '10px 4px', fontSize: 11, fontWeight: 500,
             background: 'none', border: 'none', cursor: 'pointer',
             borderBottom: subtab === t ? '2px solid #7F77DD' : '2px solid transparent',
             color: subtab === t ? '#7F77DD' : '#888',
           }}>
-            {t === 'asistencia' ? '👋 Asistencia' : t === 'entradas' ? '🎟 Entradas y pagos' : '🎵 Setlist'}
+            {t === 'asistencia' ? '👋 Asistencia' : t === 'entradas' ? '🎟 Entradas' : '🎵 Setlist'}
           </button>
         ))}
       </div>
 
       <div style={{ padding: 16 }}>
 
-        {subtab === 'setlist' && (
-          <Setlist
-            concierto={concierto}
-            onActualizado={() => {}}
-         />
-      )}
+        {subtab === 'asistencia' && (
           <div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 16 }}>
               <div style={{ background: '#EAF3DE', borderRadius: 10, padding: 10, textAlign: 'center' }}>
@@ -200,7 +190,7 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
                 borderLeft: `3px solid ${getEstado(a.id) === 'va' ? '#639922' : getEstado(a.id) === 'nova' ? '#E24B4A' : '#FAC775'}`
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <Av a={a} />
+                  <Avatar amigo={a} size={34} />
                   <div style={{ flex: 1, fontSize: 14, fontWeight: 500 }}>{a.nombre}</div>
                   <div style={{ display: 'flex', gap: 4 }}>
                     {['va', 'nova', 'pendiente'].map((estado, i) => (
@@ -245,7 +235,7 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
                   return (
                     <div key={g.id} style={{ background: 'white', borderRadius: 12, padding: 14, marginBottom: 10, border: '1px solid #eee' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: pendientesG.length + cobradosG.length > 0 ? 10 : 0 }}>
-                        <Av a={g.amigos} />
+                        <Avatar amigo={g.amigos} size={34} />
                         <div style={{ flex: 1 }}>
                           <div style={{ fontSize: 14, fontWeight: 500 }}>{g.amigos?.nombre} compró</div>
                           <div style={{ fontSize: 12, color: '#888' }}>{g.cantidad} entrada{g.cantidad > 1 ? 's' : ''} · {Number(g.precio_entrada).toFixed(2)}€ c/u · <span style={{ fontWeight: 500, color: '#534AB7' }}>{(g.precio_entrada * g.cantidad).toFixed(2)}€ total</span></div>
@@ -257,7 +247,7 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
                           <div style={{ fontSize: 10, color: '#A32D2D', marginBottom: 6, fontWeight: 500 }}>DEBEN PAGAR A {g.amigos?.nombre.toUpperCase()}</div>
                           {pendientesG.map(p => (
                             <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                              <Av a={p.amigos} size={26} />
+                              <Avatar amigo={p.amigos} size={26} />
                               <span style={{ fontSize: 13, flex: 1 }}>{p.amigos?.nombre}</span>
                               <span style={{ fontSize: 12, color: '#E24B4A', fontWeight: 500 }}>{Number(p.cantidad).toFixed(2)}€</span>
                               <button onClick={() => togglePago(p)} style={{ padding: '3px 10px', borderRadius: 20, border: 'none', background: '#FCEBEB', color: '#791F1F', fontSize: 11, fontWeight: 500, cursor: 'pointer' }}>· Pendiente</button>
@@ -270,7 +260,7 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
                           <div style={{ fontSize: 10, color: '#3B6D11', marginBottom: 6, fontWeight: 500 }}>YA PAGARON</div>
                           {cobradosG.map(p => (
                             <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, opacity: 0.6 }}>
-                              <Av a={p.amigos} size={26} />
+                              <Avatar amigo={p.amigos} size={26} />
                               <span style={{ fontSize: 13, flex: 1 }}>{p.amigos?.nombre}</span>
                               <span style={{ fontSize: 12, color: '#3B6D11', fontWeight: 500 }}>{Number(p.cantidad).toFixed(2)}€</span>
                               <button onClick={() => togglePago(p)} style={{ padding: '3px 10px', borderRadius: 20, border: 'none', background: '#EAF3DE', color: '#27500A', fontSize: 11, fontWeight: 500, cursor: 'pointer' }}>✓ Pagado</button>
@@ -287,14 +277,14 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
             {resumenPorAmigo.length > 0 && (
               <div style={{ marginBottom: 16 }}>
                 <div style={{ fontSize: 11, fontWeight: 500, color: '#888', marginBottom: 8 }}>RESUMEN POR AMIGO</div>
-                {resumenPorAmigo.map(({ amigo, totalDebe, detalleDeudas, pagados }) => (
+                {resumenPorAmigo.map(({ amigo, totalDebe, detalleDeudas }) => (
                   <div key={amigo.id} style={{
                     background: totalDebe > 0 ? '#FCEBEB' : '#EAF3DE',
                     borderRadius: 12, padding: '10px 14px', marginBottom: 8,
                     border: `1px solid ${totalDebe > 0 ? '#F09595' : '#C0DD97'}`
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <Av a={amigo} size={30} />
+                      <Avatar amigo={amigo} size={30} />
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: 13, fontWeight: 500, color: totalDebe > 0 ? '#791F1F' : '#27500A' }}>{amigo.nombre}</div>
                         {totalDebe > 0 && detalleDeudas.map((d, i) => (
@@ -304,9 +294,7 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
                         ))}
                         {totalDebe === 0 && <div style={{ fontSize: 11, color: '#3B6D11', marginTop: 2 }}>Todo pagado ✓</div>}
                       </div>
-                      {totalDebe > 0 && (
-                        <div style={{ fontSize: 15, fontWeight: 500, color: '#E24B4A' }}>{totalDebe.toFixed(2)}€</div>
-                      )}
+                      {totalDebe > 0 && <div style={{ fontSize: 15, fontWeight: 500, color: '#E24B4A' }}>{totalDebe.toFixed(2)}€</div>}
                     </div>
                   </div>
                 ))}
@@ -341,7 +329,7 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
                       ¿A quién le dio las entradas? <span style={{ color: '#7F77DD' }}>({formGasto.receptores.length} seleccionados)</span>
                     </label>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                      {amigosParaSeleccionar.map(a => {
+                      {amigos.map(a => {
                         const esComprador = a.id === formGasto.comprador_id
                         const seleccionado = esComprador || formGasto.receptores.includes(a.id)
                         return (
@@ -373,17 +361,12 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
             )}
           </div>
         )}
+
+        {subtab === 'setlist' && (
+          <Setlist concierto={concierto} onActualizado={() => {}} />
+        )}
+
       </div>
-      {subtab === 'setlist' && (
-        <div style={{ padding: 16 }}>
-          <Setlist concierto={concierto} onActualizado={() => {}} />
-        </div>
-      )}
-      {subtab === 'setlist' && (
-        <div style={{ padding: 16 }}>
-          <Setlist concierto={concierto} onActualizado={() => {}} />
-        </div>
-      )}
       {toast && <Toast mensaje={toast.mensaje} tipo={toast.tipo} onClose={() => setToast(null)} />}
     </div>
   )
