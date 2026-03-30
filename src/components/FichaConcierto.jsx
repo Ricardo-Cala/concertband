@@ -1,3 +1,4 @@
+import Setlist from './Setlist'
 import { useState, useEffect } from 'react'
 import { supabase } from '../supabase'
 import Avatar from './Avatar'
@@ -155,21 +156,26 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
       </div>
 
       <div style={{ display: 'flex', borderBottom: '0.5px solid #eee', background: 'white' }}>
-        {['asistencia', 'entradas'].map(t => (
+        {['asistencia', 'entradas', 'setlist'].map(t => (
           <button key={t} onClick={() => setSubtab(t)} style={{
             flex: 1, padding: '10px 4px', fontSize: 12, fontWeight: 500,
             background: 'none', border: 'none', cursor: 'pointer',
             borderBottom: subtab === t ? '2px solid #7F77DD' : '2px solid transparent',
             color: subtab === t ? '#7F77DD' : '#888',
           }}>
-            {t === 'asistencia' ? '👋 Asistencia' : '🎟 Entradas y pagos'}
+            {t === 'asistencia' ? '👋 Asistencia' : t === 'entradas' ? '🎟 Entradas y pagos' : '🎵 Setlist'}
           </button>
         ))}
       </div>
 
       <div style={{ padding: 16 }}>
 
-        {subtab === 'asistencia' && (
+        {subtab === 'setlist' && (
+          <Setlist
+            concierto={concierto}
+            onActualizado={() => {}}
+         />
+      )}
           <div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 16 }}>
               <div style={{ background: '#EAF3DE', borderRadius: 10, padding: 10, textAlign: 'center' }}>
