@@ -75,11 +75,15 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
       cantidad: formGasto.receptores.length,
     }]).select().single()
     if (gasto) {
-      await supabase.from('pagos').insert(formGasto.receptores.map(amigoId => ({
+      const todosReceptores = [
+        { amigoId: formGasto.comprador_id, pagado: true },
+        ...formGasto.receptores.map(amigoId => ({ amigoId, pagado: false }))
+      ]
+      await supabase.from('pagos').insert(todosReceptores.map(r => ({
         gasto_id: gasto.id,
-        pagador_id: amigoId,
+        pagador_id: r.amigoId,
         cantidad: parseFloat(formGasto.precio_entrada),
-        pagado: false,
+        pagado: r.pagado,
       })))
     }
     setMostrarFormGasto(false)
@@ -138,7 +142,7 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
   const novan = amigos.filter(a => getEstado(a.id) === 'nova')
   const pendientes = amigos.filter(a => getEstado(a.id) === 'pendiente')
 
-  const amigosParaSeleccionar = amigos.filter(a => a.id !== formGasto.comprador_id)
+  const amigosParaSeleccionar = amigos
 
   return (
     <div style={{ maxWidth: 390, margin: '0 auto', background: 'white', minHeight: '100vh' }}>
@@ -360,17 +364,21 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
                     <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 8 }}>¿A quién le dio las entradas? <span style={{ color: '#7F77DD' }}>({formGasto.receptores.length} seleccionados)</span></label>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                       {amigosParaSeleccionar.map(a => {
-                        const seleccionado = formGasto.receptores.includes(a.id)
+                        const esComprador = a.id === formGasto.comprador_id
+                        const seleccionado = esComprador || formGasto.receptores.includes(a.id)
                         return (
-                          <div key={a.id} onClick={() => toggleReceptor(a.id)} style={{
+                          <div key={a.id} onClick={() => !esComprador && toggleReceptor(a.id)} style={{
                             display: 'flex', alignItems: 'center', gap: 10,
-                            padding: '8px 12px', borderRadius: 10, cursor: 'pointer',
-                            background: seleccionado ? '#EEEDFE' : '#f8f8f8',
-                            border: seleccionado ? '1px solid #AFA9EC' : '1px solid #eee',
+                            padding: '8px 12px', borderRadius: 10, cursor: esComprador ? 'default' : 'pointer',
+                            background: esComprador ? '#EAF3DE' : seleccionado ? '#EEEDFE' : '#f8f8f8',
+                            border: esComprador ? '1px solid #C0DD97' : seleccionado ? '1px solid #AFA9EC' : '1px solid #eee',
                           }}>
                             <Avatar amigo={a} size={28} />
-                            <span style={{ fontSize: 13, flex: 1, fontWeight: seleccionado ? 500 : 400, color: seleccionado ? '#3C3489' : 'var(--color-text-primary)' }}>{a.nombre}</span>
-                            <span style={{ fontSize: 16, color: seleccionado ? '#7F77DD' : '#ddd' }}>{seleccionado ? '✓' : '○'}</span>
+                            <span style={{ fontSize: 13, flex: 1, fontWeight: 500, color: esComprador ? '#27500A' : seleccionado ? '#3C3489' : 'var(--color-text-primary)' }}>{a.nombre}</span>
+                            {esComprador
+                              ? <span style={{ fontSize: 11, color: '#27500A', fontWeight: 500 }}>comprador ✓</span>
+                              : <span style={{ fontSize: 16, color: seleccionado ? '#7F77DD' : '#ddd' }}>{seleccionado ? '✓' : '○'}</span>
+                            }
                           </div>
                         )
                       })}
