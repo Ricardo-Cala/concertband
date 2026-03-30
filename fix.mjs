@@ -1,54 +1,93 @@
 import { readFileSync, writeFileSync } from 'fs'
 
-let code = readFileSync('src/components/FichaConcierto.jsx', 'utf8')
+let code = readFileSync('src/App.jsx', 'utf8')
+
+const nuevaPantallaInicio = `  const PantallaInicio = () => {
+    const siguiente = proximos[0]
+    const diasRestantes = siguiente ? Math.ceil((new Date(siguiente.fecha) - hoy) / (1000 * 60 * 60 * 24)) : null
+    const [resumen, setResumen] = useState({ van: 0, entradas: 0, pendientePago: 0 })
+
+    useEffect(() => {
+      if (!siguiente) return
+      Promise.all([
+        supabase.from('asistentes').select('*').eq('concierto_id', siguiente.id).eq('confirmado', true),
+        supabase.from('entradas').select('cantidad').eq('concierto_id', siguiente.id),
+        supabase.from('pagos').select('cantidad').eq('pagado', false),
+      ]).then(([a, e, p]) => {
+        setResumen({
+          van: a.data?.length || 0,
+          entradas: e.data?.reduce((s, x) => s + x.cantidad, 0) || 0,
+          pendientePago: p.data?.reduce((s, x) => s + Number(x.cantidad), 0) || 0,
+        })
+      })
+    }, [siguiente?.id])
+
+    return (
+      <div style={{ padding: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
+          <div style={{ background: 'white', borderRadius: 10, padding: 14 }}>
+            <div style={{ fontSize: 24, fontWeight: 500 }}>{conciertos.length}</div>
+            <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>Conciertos totales</div>
+          </div>
+          <div style={{ background: 'white', borderRadius: 10, padding: 14 }}>
+            <div style={{ fontSize: 24, fontWeight: 500 }}>{conciertos.filter(c => c.estado === 'confirmado').length}</div>
+            <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>Confirmados</div>
+          </div>
+        </div>
+
+        {siguiente && (
+          <div style={{ background: '#1a1a2e', borderRadius: 14, padding: 16, marginBottom: 16, cursor: 'pointer' }}
+            onClick={() => setConciertoSeleccionado(siguiente)}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 14 }}>
+              <div style={{ textAlign: 'center', flexShrink: 0 }}>
+                <div style={{ fontSize: 42, fontWeight: 500, color: '#7F77DD', lineHeight: 1 }}>{diasRestantes}</div>
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>{diasRestantes === 1 ? 'día' : 'días'}</div>
+              </div>
+              <div style={{ borderLeft: '1px solid rgba(255,255,255,0.15)', paddingLeft: 16, flex: 1 }}>
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 4 }}>PRÓXIMO CONCIERTO</div>
+                <div style={{ fontSize: 16, fontWeight: 500, color: 'white', marginBottom: 2 }}>{siguiente.artista}</div>
+                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)' }}>
+                  {new Date(siguiente.fecha).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })} · {siguiente.ciudad}
+                </div>
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+              <div style={{ background: 'rgba(255,255,255,0.08)', borderRadius: 10, padding: '8px 10px', textAlign: 'center' }}>
+                <div style={{ fontSize: 18, fontWeight: 500, color: '#69d08c' }}>{resumen.van}</div>
+                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>Van</div>
+              </div>
+              <div style={{ background: 'rgba(255,255,255,0.08)', borderRadius: 10, padding: '8px 10px', textAlign: 'center' }}>
+                <div style={{ fontSize: 18, fontWeight: 500, color: '#AFA9EC' }}>{resumen.entradas}</div>
+                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>Entradas</div>
+              </div>
+              <div style={{ background: 'rgba(255,255,255,0.08)', borderRadius: 10, padding: '8px 10px', textAlign: 'center' }}>
+                <div style={{ fontSize: 18, fontWeight: 500, color: resumen.pendientePago > 0 ? '#FAC775' : '#69d08c' }}>
+                  {resumen.pendientePago > 0 ? resumen.pendientePago.toFixed(0) + '€' : '✓'}
+                </div>
+                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>
+                  {resumen.pendientePago > 0 ? 'Pdte. pago' : 'Pagado'}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div style={{ fontSize: 13, fontWeight: 500, color: '#888', marginBottom: 10 }}>PRÓXIMOS CONCIERTOS</div>
+        {proximos.length === 0 && (
+          <div style={{ background: 'white', borderRadius: 12, padding: 20, textAlign: 'center', color: '#888', fontSize: 14 }}>
+            Aún no hay conciertos.<br />
+            <span style={{ color: '#7F77DD', cursor: 'pointer' }} onClick={() => setMostrarNuevo(true)}>Añade el primero</span>
+          </div>
+        )}
+        {proximos.slice(0, 3).map(c => <TarjetaConcierto key={c.id} c={c} />)}
+      </div>
+    )
+  }`
 
 code = code.replace(
-  `    const { data: gasto } = await supabase.from('gastos').insert([{
-      concierto_id: concierto.id,
-      comprador_id: formGasto.comprador_id,
-      precio_entrada: parseFloat(formGasto.precio_entrada),
-      cantidad: formGasto.receptores.length,
-    }]).select().single()`,
-  `    const totalPersonas = formGasto.receptores.length + 1
-    const { data: gasto } = await supabase.from('gastos').insert([{
-      concierto_id: concierto.id,
-      comprador_id: formGasto.comprador_id,
-      precio_entrada: parseFloat(formGasto.precio_entrada),
-      cantidad: totalPersonas,
-    }]).select().single()`
+  /  const PantallaInicio = \(\) => \{[\s\S]*?  \}/m,
+  nuevaPantallaInicio
 )
 
-code = code.replace(
-  /<div style=\{\{ fontSize: 12, color: '#888' \}\}>\{g\.cantidad\} entrada\{g\.cantidad > 1 \? 's' : ''\} · \{g\.precio_entrada\}€ c\/u · <span style=\{\{ fontWeight: 500, color: '#534AB7' \}\}>\{(g\.precio_entrada \* g\.cantidad)\.toFixed\(0\)\}€ total<\/span><\/div>/,
-  `<div style={{ fontSize: 12, color: '#888' }}>{g.cantidad} entrada{g.cantidad > 1 ? 's' : ''} · {Number(g.precio_entrada).toFixed(2)}€ c/u · <span style={{ fontWeight: 500, color: '#534AB7' }}>{(g.precio_entrada * g.cantidad).toFixed(2)}€ total</span></div>`
-)
-
-code = code.replace(
-  `              <span style={{ fontSize: 12, color: '#E24B4A', fontWeight: 500 }}>{p.cantidad}€</span>`,
-  `              <span style={{ fontSize: 12, color: '#E24B4A', fontWeight: 500 }}>{Number(p.cantidad).toFixed(2)}€</span>`
-)
-
-code = code.replace(
-  `              <span style={{ fontSize: 12, color: '#3B6D11', fontWeight: 500 }}>{p.cantidad}€</span>`,
-  `              <span style={{ fontSize: 12, color: '#3B6D11', fontWeight: 500 }}>{Number(p.cantidad).toFixed(2)}€</span>`
-)
-
-code = code.replace(
-  `  const totalPendiente = pagos.filter(p => !p.pagado).reduce((s, p) => s + p.cantidad, 0)
-  const totalCobrado = pagos.filter(p => p.pagado).reduce((s, p) => s + p.cantidad, 0)`,
-  `  const totalPendiente = pagos.filter(p => !p.pagado).reduce((s, p) => s + Number(p.cantidad), 0)
-  const totalCobrado = pagos.filter(p => p.pagado && p.pagador_id !== gastos.find(g => g.id === p.gasto_id)?.comprador_id).reduce((s, p) => s + Number(p.cantidad), 0)`
-)
-
-code = code.replace(
-  `                <div style={{ fontSize: 20, fontWeight: 500, color: '#791F1F' }}>{totalPendiente.toFixed(0)}€</div>`,
-  `                <div style={{ fontSize: 20, fontWeight: 500, color: '#791F1F' }}>{totalPendiente.toFixed(2)}€</div>`
-)
-
-code = code.replace(
-  `                <div style={{ fontSize: 20, fontWeight: 500, color: '#27500A' }}>{totalCobrado.toFixed(0)}€</div>`,
-  `                <div style={{ fontSize: 20, fontWeight: 500, color: '#27500A' }}>{totalCobrado.toFixed(2)}€</div>`
-)
-
-writeFileSync('src/components/FichaConcierto.jsx', code)
-console.log('Cantidades y totales corregidos')
+writeFileSync('src/App.jsx', code)
+console.log('PantallaInicio actualizada con resumen')

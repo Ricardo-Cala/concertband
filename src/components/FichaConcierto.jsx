@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../supabase'
 import Avatar from './Avatar'
+import Toast from './Toast'
 
 export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }) {
   const [subtab, setSubtab] = useState('asistencia')
@@ -12,6 +13,8 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
   const [hotel, setHotel] = useState(null)
   const [mostrarFormGasto, setMostrarFormGasto] = useState(false)
   const [formGasto, setFormGasto] = useState({ comprador_id: '', precio_entrada: '', receptores: [] })
+  const [toast, setToast] = useState(null)
+  const mostrarToast = (mensaje, tipo = 'ok') => setToast({ mensaje, tipo })
   const [mostrarFormEntrada, setMostrarFormEntrada] = useState(false)
   const [formEntrada, setFormEntrada] = useState({ amigo_id: '', cantidad: 1 })
 
@@ -48,6 +51,7 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
       await supabase.from('asistentes').insert([{ concierto_id: concierto.id, amigo_id: amigoId, confirmado: estado === 'va' }])
     }
     cargarDatos()
+    mostrarToast(estado === 'va' ? '¡Va al concierto!' : estado === 'nova' ? 'No va' : 'Pendiente de confirmar')
   }
 
   const getEstado = (amigoId) => {
@@ -90,6 +94,7 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
     setMostrarFormGasto(false)
     setFormGasto({ comprador_id: '', precio_entrada: '', receptores: [] })
     cargarDatos()
+    mostrarToast('Comprador registrado')
   }
 
   const guardarEntrada = async () => {
@@ -103,6 +108,7 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
     setMostrarFormEntrada(false)
     setFormEntrada({ amigo_id: '', cantidad: 1 })
     cargarDatos()
+    mostrarToast('Entrada añadida')
   }
 
   const cambiarCantidad = async (e, cantidad) => {
@@ -119,6 +125,7 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
   const togglePago = async (p) => {
     await supabase.from('pagos').update({ pagado: !p.pagado }).eq('id', p.id)
     cargarDatos()
+    mostrarToast(p.pagado ? 'Marcado como pendiente' : 'Pago confirmado')
   }
 
   const borrarGasto = async (id) => {
@@ -398,6 +405,7 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
           </div>
         )}
       </div>
+      {toast && <Toast mensaje={toast.mensaje} tipo={toast.tipo} onClose={() => setToast(null)} />}
     </div>
   )
 }
