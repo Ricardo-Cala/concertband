@@ -6,7 +6,6 @@ import Toast from './Toast'
 export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }) {
   const [subtab, setSubtab] = useState('asistencia')
   const [asistentes, setAsistentes] = useState([])
-  const [entradas, setEntradas] = useState([])
   const [gastos, setGastos] = useState([])
   const [pagos, setPagos] = useState([])
   const [transporte, setTransporte] = useState(null)
@@ -15,21 +14,17 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
   const [formGasto, setFormGasto] = useState({ comprador_id: '', precio_entrada: '', receptores: [] })
   const [toast, setToast] = useState(null)
   const mostrarToast = (mensaje, tipo = 'ok') => setToast({ mensaje, tipo })
-  const [mostrarFormEntrada, setMostrarFormEntrada] = useState(false)
-  const [formEntrada, setFormEntrada] = useState({ amigo_id: '', cantidad: 1 })
 
   useEffect(() => { cargarDatos() }, [])
 
   const cargarDatos = async () => {
-    const [a, e, g, t, h] = await Promise.all([
+    const [a, g, t, h] = await Promise.all([
       supabase.from('asistentes').select('*, amigos(nombre, iniciales, color, foto_url)').eq('concierto_id', concierto.id),
-      supabase.from('entradas').select('*, amigos(nombre, iniciales, color, foto_url)').eq('concierto_id', concierto.id),
       supabase.from('gastos').select('*, amigos(nombre, iniciales, color, foto_url)').eq('concierto_id', concierto.id),
       supabase.from('transportes').select('*, amigos(nombre, iniciales, color, foto_url)').eq('concierto_id', concierto.id).single(),
       supabase.from('hoteles').select('*, amigos(nombre, iniciales, color, foto_url)').eq('concierto_id', concierto.id).single(),
     ])
     setAsistentes(a.data || [])
-    setEntradas(e.data || [])
     setGastos(g.data || [])
     setTransporte(t.data || null)
     setHotel(h.data || null)
@@ -97,31 +92,6 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
     mostrarToast('Comprador registrado')
   }
 
-  const guardarEntrada = async () => {
-    if (!formEntrada.amigo_id) { alert('Selecciona un amigo'); return }
-    await supabase.from('entradas').insert([{
-      concierto_id: concierto.id,
-      amigo_id: formEntrada.amigo_id,
-      cantidad: parseInt(formEntrada.cantidad),
-      pagada: false
-    }])
-    setMostrarFormEntrada(false)
-    setFormEntrada({ amigo_id: '', cantidad: 1 })
-    cargarDatos()
-    mostrarToast('Entrada añadida')
-  }
-
-  const cambiarCantidad = async (e, cantidad) => {
-    if (cantidad < 1) return
-    await supabase.from('entradas').update({ cantidad }).eq('id', e.id)
-    cargarDatos()
-  }
-
-  const eliminarEntrada = async (id) => {
-    await supabase.from('entradas').delete().eq('id', id)
-    cargarDatos()
-  }
-
   const togglePago = async (p) => {
     await supabase.from('pagos').update({ pagado: !p.pagado }).eq('id', p.id)
     cargarDatos()
@@ -131,6 +101,7 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
   const borrarGasto = async (id) => {
     await supabase.from('gastos').delete().eq('id', id)
     cargarDatos()
+    mostrarToast('Comprador eliminado')
   }
 
   const iconTransporte = (tipo) => {
@@ -141,16 +112,27 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
     return '🚆'
   }
 
-  const amigosConEntrada = entradas.map(e => e.amigo_id)
-  const amigosDisponibles = amigos.filter(a => !amigosConEntrada.includes(a.id))
-  const totalEntradas = entradas.reduce((s, e) => s + e.cantidad, 0)
   const totalPendiente = pagos.filter(p => !p.pagado).reduce((s, p) => s + Number(p.cantidad), 0)
   const totalCobrado = pagos.filter(p => p.pagado && p.pagador_id !== gastos.find(g => g.id === p.gasto_id)?.comprador_id).reduce((s, p) => s + Number(p.cantidad), 0)
+  const totalGastado = gastos.reduce((s, g) => s + g.precio_entrada * g.cantidad, 0)
   const van = amigos.filter(a => getEstado(a.id) === 'va')
   const novan = amigos.filter(a => getEstado(a.id) === 'nova')
   const pendientes = amigos.filter(a => getEstado(a.id) === 'pendiente')
-
   const amigosParaSeleccionar = amigos
+
+  const resumenPorAmigo = amigos.map(amigo => {
+    const deudas = pagos.filter(p => p.pagador_id === amigo.id && !p.pagado)
+    const pagados = pagos.filter(p => p.pagador_id === amigo.id && p.pagado && p.pagador_id !== gastos.find(g => g.id === p.gasto_id)?.comprador_id)
+    const totalDebe = deudas.reduce((s, p) => s + Number(p.cantidad), 0)
+    const detalleDeudas = deudas.map(p => {
+      const gasto = gastos.find(g => g.id === p.gasto_id)
+      const comprador = amigos.find(a => a.id === gasto?.comprador_id)
+      return { comprador, cantidad: Number(p.cantidad) }
+    })
+    return { amigo, totalDebe, detalleDeudas, pagados }
+  }).filter(r => r.totalDebe > 0 || r.pagados.length > 0)
+
+  const Av = ({ a, size = 34 }) => <Avatar amigo={a} size={size} />
 
   return (
     <div style={{ maxWidth: 390, margin: '0 auto', background: 'white', minHeight: '100vh' }}>
@@ -205,13 +187,12 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
             </div>
             {amigos.map(a => (
               <div key={a.id} style={{
-                background: 'white', borderRadius: 12, padding: '12px 14px', marginBottom: 8, border: '1px solid #eee',
-                background: getEstado(a.id) === 'va' ? '#EAF3DE' : getEstado(a.id) === 'nova' ? '#FCEBEB' : 'white',
+                borderRadius: 12, padding: '12px 14px', marginBottom: 8, border: '1px solid #eee',
                 background: getEstado(a.id) === 'va' ? '#EAF3DE' : getEstado(a.id) === 'nova' ? '#FCEBEB' : 'white',
                 borderLeft: `3px solid ${getEstado(a.id) === 'va' ? '#639922' : getEstado(a.id) === 'nova' ? '#E24B4A' : '#FAC775'}`
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <Avatar amigo={a} size={34} />
+                  <Av a={a} />
                   <div style={{ flex: 1, fontSize: 14, fontWeight: 500 }}>{a.nombre}</div>
                   <div style={{ display: 'flex', gap: 4 }}>
                     {['va', 'nova', 'pendiente'].map((estado, i) => (
@@ -233,8 +214,8 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
           <div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 16 }}>
               <div style={{ background: '#EEEDFE', borderRadius: 10, padding: 10, textAlign: 'center' }}>
-                <div style={{ fontSize: 20, fontWeight: 500, color: '#3C3489' }}>{totalEntradas}</div>
-                <div style={{ fontSize: 10, color: '#534AB7' }}>Entradas</div>
+                <div style={{ fontSize: 20, fontWeight: 500, color: '#3C3489' }}>{totalGastado.toFixed(2)}€</div>
+                <div style={{ fontSize: 10, color: '#534AB7' }}>Total</div>
               </div>
               <div style={{ background: '#FCEBEB', borderRadius: 10, padding: 10, textAlign: 'center' }}>
                 <div style={{ fontSize: 20, fontWeight: 500, color: '#791F1F' }}>{totalPendiente.toFixed(2)}€</div>
@@ -252,14 +233,14 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
                 {gastos.map(g => {
                   const pagosGasto = pagos.filter(p => p.gasto_id === g.id)
                   const pendientesG = pagosGasto.filter(p => !p.pagado)
-                  const cobradosG = pagosGasto.filter(p => p.pagado)
+                  const cobradosG = pagosGasto.filter(p => p.pagado && p.pagador_id !== g.comprador_id)
                   return (
                     <div key={g.id} style={{ background: 'white', borderRadius: 12, padding: 14, marginBottom: 10, border: '1px solid #eee' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: pendientesG.length + cobradosG.length > 0 ? 10 : 0 }}>
-                        <Avatar amigo={g.amigos} size={34} />
+                        <Av a={g.amigos} />
                         <div style={{ flex: 1 }}>
                           <div style={{ fontSize: 14, fontWeight: 500 }}>{g.amigos?.nombre} compró</div>
-                          <div style={{ fontSize: 12, color: '#888' }}>{g.cantidad} entrada{g.cantidad > 1 ? 's' : ''} · {g.precio_entrada}€ c/u · <span style={{ fontWeight: 500, color: '#534AB7' }}>{(g.precio_entrada * g.cantidad).toFixed(0)}€ total</span></div>
+                          <div style={{ fontSize: 12, color: '#888' }}>{g.cantidad} entrada{g.cantidad > 1 ? 's' : ''} · {Number(g.precio_entrada).toFixed(2)}€ c/u · <span style={{ fontWeight: 500, color: '#534AB7' }}>{(g.precio_entrada * g.cantidad).toFixed(2)}€ total</span></div>
                         </div>
                         <button onClick={() => borrarGasto(g.id)} style={{ background: 'none', border: 'none', fontSize: 16, cursor: 'pointer', color: '#ccc' }}>🗑️</button>
                       </div>
@@ -268,7 +249,7 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
                           <div style={{ fontSize: 10, color: '#A32D2D', marginBottom: 6, fontWeight: 500 }}>DEBEN PAGAR A {g.amigos?.nombre.toUpperCase()}</div>
                           {pendientesG.map(p => (
                             <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                              <Avatar amigo={p.amigos} size={26} />
+                              <Av a={p.amigos} size={26} />
                               <span style={{ fontSize: 13, flex: 1 }}>{p.amigos?.nombre}</span>
                               <span style={{ fontSize: 12, color: '#E24B4A', fontWeight: 500 }}>{Number(p.cantidad).toFixed(2)}€</span>
                               <button onClick={() => togglePago(p)} style={{ padding: '3px 10px', borderRadius: 20, border: 'none', background: '#FCEBEB', color: '#791F1F', fontSize: 11, fontWeight: 500, cursor: 'pointer' }}>· Pendiente</button>
@@ -281,7 +262,7 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
                           <div style={{ fontSize: 10, color: '#3B6D11', marginBottom: 6, fontWeight: 500 }}>YA PAGARON</div>
                           {cobradosG.map(p => (
                             <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, opacity: 0.6 }}>
-                              <Avatar amigo={p.amigos} size={26} />
+                              <Av a={p.amigos} size={26} />
                               <span style={{ fontSize: 13, flex: 1 }}>{p.amigos?.nombre}</span>
                               <span style={{ fontSize: 12, color: '#3B6D11', fontWeight: 500 }}>{Number(p.cantidad).toFixed(2)}€</span>
                               <button onClick={() => togglePago(p)} style={{ padding: '3px 10px', borderRadius: 20, border: 'none', background: '#EAF3DE', color: '#27500A', fontSize: 11, fontWeight: 500, cursor: 'pointer' }}>✓ Pagado</button>
@@ -295,52 +276,32 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
               </div>
             )}
 
-            <div style={{ fontSize: 11, fontWeight: 500, color: '#888', marginBottom: 8 }}>ENTRADAS POR PERSONA</div>
-            {entradas.map(e => (
-              <div key={e.id} style={{ background: 'white', borderRadius: 12, padding: '10px 14px', marginBottom: 8, border: '1px solid #eee' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <Avatar amigo={e.amigos} size={34} />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 14, fontWeight: 500 }}>{e.amigos?.nombre}</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-                      <button onClick={() => cambiarCantidad(e, e.cantidad - 1)} style={{ width: 22, height: 22, borderRadius: '50%', border: '1px solid #ddd', background: 'white', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>−</button>
-                      <span style={{ fontSize: 13 }}>{e.cantidad}</span>
-                      <button onClick={() => cambiarCantidad(e, e.cantidad + 1)} style={{ width: 22, height: 22, borderRadius: '50%', border: '1px solid #ddd', background: 'white', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>+</button>
-                      <span style={{ fontSize: 11, color: '#888' }}>entrada{e.cantidad > 1 ? 's' : ''}</span>
+            {resumenPorAmigo.length > 0 && (
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 11, fontWeight: 500, color: '#888', marginBottom: 8 }}>RESUMEN POR AMIGO</div>
+                {resumenPorAmigo.map(({ amigo, totalDebe, detalleDeudas, pagados }) => (
+                  <div key={amigo.id} style={{
+                    background: totalDebe > 0 ? '#FCEBEB' : '#EAF3DE',
+                    borderRadius: 12, padding: '10px 14px', marginBottom: 8,
+                    border: `1px solid ${totalDebe > 0 ? '#F09595' : '#C0DD97'}`
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <Av a={amigo} size={30} />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 13, fontWeight: 500, color: totalDebe > 0 ? '#791F1F' : '#27500A' }}>{amigo.nombre}</div>
+                        {totalDebe > 0 && detalleDeudas.map((d, i) => (
+                          <div key={i} style={{ fontSize: 11, color: '#A32D2D', marginTop: 2 }}>
+                            Debe {d.cantidad.toFixed(2)}€ a {d.comprador?.nombre}
+                          </div>
+                        ))}
+                        {totalDebe === 0 && <div style={{ fontSize: 11, color: '#3B6D11', marginTop: 2 }}>Todo pagado ✓</div>}
+                      </div>
+                      {totalDebe > 0 && (
+                        <div style={{ fontSize: 15, fontWeight: 500, color: '#E24B4A' }}>{totalDebe.toFixed(2)}€</div>
+                      )}
                     </div>
                   </div>
-                  <button onClick={() => eliminarEntrada(e.id)} style={{ background: 'none', border: 'none', fontSize: 11, color: '#ccc', cursor: 'pointer' }}>quitar</button>
-                </div>
-              </div>
-            ))}
-
-            {!mostrarFormEntrada && amigosDisponibles.length > 0 && (
-              <div style={{ marginTop: 8, marginBottom: 16 }}>
-                <div style={{ fontSize: 12, color: '#888', marginBottom: 8 }}>Añadir persona con entrada:</div>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  {amigosDisponibles.map(a => (
-                    <button key={a.id} onClick={() => { setFormEntrada(f => ({ ...f, amigo_id: a.id })); setMostrarFormEntrada(true) }}
-                      style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 20, border: '1px solid #ddd', background: 'white', fontSize: 13, cursor: 'pointer' }}>
-                      <Avatar amigo={a} size={20} />
-                      {a.nombre}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {mostrarFormEntrada && (
-              <div style={{ background: 'white', borderRadius: 12, padding: 14, marginBottom: 12, border: '1px solid #7F77DD' }}>
-                <div style={{ fontSize: 12, fontWeight: 500, color: '#7F77DD', marginBottom: 10 }}>AÑADIR ENTRADA</div>
-                <div style={{ marginBottom: 10 }}>
-                  <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 4 }}>Cantidad</label>
-                  <input type='number' value={formEntrada.cantidad} min='1' onChange={e => setFormEntrada(f => ({ ...f, cantidad: e.target.value }))}
-                    style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #ddd', fontSize: 14 }} />
-                </div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button onClick={() => setMostrarFormEntrada(false)} style={{ flex: 1, padding: 10, borderRadius: 8, border: '1px solid #ddd', background: 'white', fontSize: 13 }}>Cancelar</button>
-                  <button onClick={guardarEntrada} style={{ flex: 1, padding: 10, borderRadius: 8, border: 'none', background: '#7F77DD', color: 'white', fontSize: 13, fontWeight: 500 }}>Guardar</button>
-                </div>
+                ))}
               </div>
             )}
 
@@ -353,7 +314,6 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
             {mostrarFormGasto && (
               <div style={{ background: 'white', borderRadius: 12, padding: 16, marginTop: 8, border: '1px solid #7F77DD' }}>
                 <div style={{ fontSize: 12, fontWeight: 500, color: '#7F77DD', marginBottom: 12 }}>¿QUIÉN COMPRÓ LAS ENTRADAS?</div>
-
                 <div style={{ marginBottom: 12 }}>
                   <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 4 }}>Comprador</label>
                   <select value={formGasto.comprador_id} onChange={e => setFormGasto(f => ({ ...f, comprador_id: e.target.value, receptores: [] }))}
@@ -362,16 +322,16 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
                     {amigos.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
                   </select>
                 </div>
-
                 <div style={{ marginBottom: 12 }}>
                   <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 4 }}>Precio por entrada (€)</label>
                   <input type='number' value={formGasto.precio_entrada} onChange={e => setFormGasto(f => ({ ...f, precio_entrada: e.target.value }))}
-                    placeholder='Ej: 37.40' style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #ddd', fontSize: 14 }} />
+                    placeholder='Ej: 37.40' step='0.01' style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #ddd', fontSize: 14 }} />
                 </div>
-
                 {formGasto.comprador_id && (
                   <div style={{ marginBottom: 16 }}>
-                    <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 8 }}>¿A quién le dio las entradas? <span style={{ color: '#7F77DD' }}>({formGasto.receptores.length} seleccionados)</span></label>
+                    <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 8 }}>
+                      ¿A quién le dio las entradas? <span style={{ color: '#7F77DD' }}>({formGasto.receptores.length} seleccionados)</span>
+                    </label>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                       {amigosParaSeleccionar.map(a => {
                         const esComprador = a.id === formGasto.comprador_id
@@ -395,7 +355,6 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
                     </div>
                   </div>
                 )}
-
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button onClick={() => { setMostrarFormGasto(false); setFormGasto({ comprador_id: '', precio_entrada: '', receptores: [] }) }}
                     style={{ flex: 1, padding: 10, borderRadius: 8, border: '1px solid #ddd', background: 'white', fontSize: 13 }}>Cancelar</button>
