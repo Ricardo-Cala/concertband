@@ -68,11 +68,12 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
   const guardarGasto = async () => {
     if (!formGasto.comprador_id || !formGasto.precio_entrada) { alert('Rellena comprador y precio'); return }
     if (formGasto.receptores.length === 0) { alert('Selecciona al menos un amigo que recibió entrada'); return }
+    const totalPersonas = formGasto.receptores.length + 1
     const { data: gasto } = await supabase.from('gastos').insert([{
       concierto_id: concierto.id,
       comprador_id: formGasto.comprador_id,
       precio_entrada: parseFloat(formGasto.precio_entrada),
-      cantidad: formGasto.receptores.length,
+      cantidad: totalPersonas,
     }]).select().single()
     if (gasto) {
       const todosReceptores = [
@@ -136,8 +137,8 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
   const amigosConEntrada = entradas.map(e => e.amigo_id)
   const amigosDisponibles = amigos.filter(a => !amigosConEntrada.includes(a.id))
   const totalEntradas = entradas.reduce((s, e) => s + e.cantidad, 0)
-  const totalPendiente = pagos.filter(p => !p.pagado).reduce((s, p) => s + p.cantidad, 0)
-  const totalCobrado = pagos.filter(p => p.pagado).reduce((s, p) => s + p.cantidad, 0)
+  const totalPendiente = pagos.filter(p => !p.pagado).reduce((s, p) => s + Number(p.cantidad), 0)
+  const totalCobrado = pagos.filter(p => p.pagado && p.pagador_id !== gastos.find(g => g.id === p.gasto_id)?.comprador_id).reduce((s, p) => s + Number(p.cantidad), 0)
   const van = amigos.filter(a => getEstado(a.id) === 'va')
   const novan = amigos.filter(a => getEstado(a.id) === 'nova')
   const pendientes = amigos.filter(a => getEstado(a.id) === 'pendiente')
@@ -227,11 +228,11 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
                 <div style={{ fontSize: 10, color: '#534AB7' }}>Entradas</div>
               </div>
               <div style={{ background: '#FCEBEB', borderRadius: 10, padding: 10, textAlign: 'center' }}>
-                <div style={{ fontSize: 20, fontWeight: 500, color: '#791F1F' }}>{totalPendiente.toFixed(0)}€</div>
+                <div style={{ fontSize: 20, fontWeight: 500, color: '#791F1F' }}>{totalPendiente.toFixed(2)}€</div>
                 <div style={{ fontSize: 10, color: '#A32D2D' }}>Pendiente</div>
               </div>
               <div style={{ background: '#EAF3DE', borderRadius: 10, padding: 10, textAlign: 'center' }}>
-                <div style={{ fontSize: 20, fontWeight: 500, color: '#27500A' }}>{totalCobrado.toFixed(0)}€</div>
+                <div style={{ fontSize: 20, fontWeight: 500, color: '#27500A' }}>{totalCobrado.toFixed(2)}€</div>
                 <div style={{ fontSize: 10, color: '#3B6D11' }}>Cobrado</div>
               </div>
             </div>
@@ -260,7 +261,7 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
                             <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                               <Avatar amigo={p.amigos} size={26} />
                               <span style={{ fontSize: 13, flex: 1 }}>{p.amigos?.nombre}</span>
-                              <span style={{ fontSize: 12, color: '#E24B4A', fontWeight: 500 }}>{p.cantidad}€</span>
+                              <span style={{ fontSize: 12, color: '#E24B4A', fontWeight: 500 }}>{Number(p.cantidad).toFixed(2)}€</span>
                               <button onClick={() => togglePago(p)} style={{ padding: '3px 10px', borderRadius: 20, border: 'none', background: '#FCEBEB', color: '#791F1F', fontSize: 11, fontWeight: 500, cursor: 'pointer' }}>· Pendiente</button>
                             </div>
                           ))}
@@ -273,7 +274,7 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
                             <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, opacity: 0.6 }}>
                               <Avatar amigo={p.amigos} size={26} />
                               <span style={{ fontSize: 13, flex: 1 }}>{p.amigos?.nombre}</span>
-                              <span style={{ fontSize: 12, color: '#3B6D11', fontWeight: 500 }}>{p.cantidad}€</span>
+                              <span style={{ fontSize: 12, color: '#3B6D11', fontWeight: 500 }}>{Number(p.cantidad).toFixed(2)}€</span>
                               <button onClick={() => togglePago(p)} style={{ padding: '3px 10px', borderRadius: 20, border: 'none', background: '#EAF3DE', color: '#27500A', fontSize: 11, fontWeight: 500, cursor: 'pointer' }}>✓ Pagado</button>
                             </div>
                           ))}
