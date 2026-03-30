@@ -10,10 +10,10 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
   const [pagos, setPagos] = useState([])
   const [transporte, setTransporte] = useState(null)
   const [hotel, setHotel] = useState(null)
-  const [mostrarFormEntrada, setMostrarFormEntrada] = useState(false)
   const [mostrarFormGasto, setMostrarFormGasto] = useState(false)
+  const [formGasto, setFormGasto] = useState({ comprador_id: '', precio_entrada: '', receptores: [] })
+  const [mostrarFormEntrada, setMostrarFormEntrada] = useState(false)
   const [formEntrada, setFormEntrada] = useState({ amigo_id: '', cantidad: 1 })
-  const [formGasto, setFormGasto] = useState({ comprador_id: '', precio_entrada: '', cantidad: 1 })
 
   useEffect(() => { cargarDatos() }, [])
 
@@ -56,6 +56,37 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
     return a.confirmado ? 'va' : 'nova'
   }
 
+  const toggleReceptor = (amigoId) => {
+    setFormGasto(f => ({
+      ...f,
+      receptores: f.receptores.includes(amigoId)
+        ? f.receptores.filter(id => id !== amigoId)
+        : [...f.receptores, amigoId]
+    }))
+  }
+
+  const guardarGasto = async () => {
+    if (!formGasto.comprador_id || !formGasto.precio_entrada) { alert('Rellena comprador y precio'); return }
+    if (formGasto.receptores.length === 0) { alert('Selecciona al menos un amigo que recibió entrada'); return }
+    const { data: gasto } = await supabase.from('gastos').insert([{
+      concierto_id: concierto.id,
+      comprador_id: formGasto.comprador_id,
+      precio_entrada: parseFloat(formGasto.precio_entrada),
+      cantidad: formGasto.receptores.length,
+    }]).select().single()
+    if (gasto) {
+      await supabase.from('pagos').insert(formGasto.receptores.map(amigoId => ({
+        gasto_id: gasto.id,
+        pagador_id: amigoId,
+        cantidad: parseFloat(formGasto.precio_entrada),
+        pagado: false,
+      })))
+    }
+    setMostrarFormGasto(false)
+    setFormGasto({ comprador_id: '', precio_entrada: '', receptores: [] })
+    cargarDatos()
+  }
+
   const guardarEntrada = async () => {
     if (!formEntrada.amigo_id) { alert('Selecciona un amigo'); return }
     await supabase.from('entradas').insert([{
@@ -80,30 +111,6 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
     cargarDatos()
   }
 
-  const guardarGasto = async () => {
-    if (!formGasto.comprador_id || !formGasto.precio_entrada) { alert('Rellena comprador y precio'); return }
-    const { data: gasto } = await supabase.from('gastos').insert([{
-      concierto_id: concierto.id,
-      comprador_id: formGasto.comprador_id,
-      precio_entrada: parseFloat(formGasto.precio_entrada),
-      cantidad: parseInt(formGasto.cantidad),
-    }]).select().single()
-    if (gasto) {
-      const conEntrada = entradas.filter(e => e.amigo_id !== formGasto.comprador_id)
-      if (conEntrada.length > 0) {
-        await supabase.from('pagos').insert(conEntrada.map(e => ({
-          gasto_id: gasto.id,
-          pagador_id: e.amigo_id,
-          cantidad: parseFloat(formGasto.precio_entrada),
-          pagado: false,
-        })))
-      }
-    }
-    setMostrarFormGasto(false)
-    setFormGasto({ comprador_id: '', precio_entrada: '', cantidad: 1 })
-    cargarDatos()
-  }
-
   const togglePago = async (p) => {
     await supabase.from('pagos').update({ pagado: !p.pagado }).eq('id', p.id)
     cargarDatos()
@@ -125,12 +132,13 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
   const amigosConEntrada = entradas.map(e => e.amigo_id)
   const amigosDisponibles = amigos.filter(a => !amigosConEntrada.includes(a.id))
   const totalEntradas = entradas.reduce((s, e) => s + e.cantidad, 0)
-  const totalComprado = gastos.reduce((s, g) => s + g.precio_entrada * g.cantidad, 0)
   const totalPendiente = pagos.filter(p => !p.pagado).reduce((s, p) => s + p.cantidad, 0)
   const totalCobrado = pagos.filter(p => p.pagado).reduce((s, p) => s + p.cantidad, 0)
   const van = amigos.filter(a => getEstado(a.id) === 'va')
   const novan = amigos.filter(a => getEstado(a.id) === 'nova')
   const pendientes = amigos.filter(a => getEstado(a.id) === 'pendiente')
+
+  const amigosParaSeleccionar = amigos.filter(a => a.id !== formGasto.comprador_id)
 
   return (
     <div style={{ maxWidth: 390, margin: '0 auto', background: 'white', minHeight: '100vh' }}>
@@ -183,7 +191,6 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
                 <div style={{ fontSize: 10, color: '#854F0B' }}>Pendientes</div>
               </div>
             </div>
-
             {amigos.map(a => (
               <div key={a.id} style={{
                 background: 'white', borderRadius: 12, padding: '12px 14px', marginBottom: 8, border: '1px solid #eee',
@@ -234,7 +241,7 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
                   const cobradosG = pagosGasto.filter(p => p.pagado)
                   return (
                     <div key={g.id} style={{ background: 'white', borderRadius: 12, padding: 14, marginBottom: 10, border: '1px solid #eee' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: pendientesG.length + cobradosG.length > 0 ? 10 : 0 }}>
                         <Avatar amigo={g.amigos} size={34} />
                         <div style={{ flex: 1 }}>
                           <div style={{ fontSize: 14, fontWeight: 500 }}>{g.amigos?.nombre} compró</div>
@@ -332,27 +339,50 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
             {mostrarFormGasto && (
               <div style={{ background: 'white', borderRadius: 12, padding: 16, marginTop: 8, border: '1px solid #7F77DD' }}>
                 <div style={{ fontSize: 12, fontWeight: 500, color: '#7F77DD', marginBottom: 12 }}>¿QUIÉN COMPRÓ LAS ENTRADAS?</div>
+
                 <div style={{ marginBottom: 12 }}>
                   <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 4 }}>Comprador</label>
-                  <select value={formGasto.comprador_id} onChange={e => setFormGasto(f => ({ ...f, comprador_id: e.target.value }))}
+                  <select value={formGasto.comprador_id} onChange={e => setFormGasto(f => ({ ...f, comprador_id: e.target.value, receptores: [] }))}
                     style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #ddd', fontSize: 14, background: 'white' }}>
                     <option value=''>— Selecciona —</option>
                     {amigos.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
                   </select>
                 </div>
+
                 <div style={{ marginBottom: 12 }}>
                   <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 4 }}>Precio por entrada (€)</label>
                   <input type='number' value={formGasto.precio_entrada} onChange={e => setFormGasto(f => ({ ...f, precio_entrada: e.target.value }))}
-                    placeholder='Ej: 65' style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #ddd', fontSize: 14 }} />
+                    placeholder='Ej: 37.40' style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #ddd', fontSize: 14 }} />
                 </div>
-                <div style={{ marginBottom: 16 }}>
-                  <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 4 }}>Entradas compradas</label>
-                  <input type='number' value={formGasto.cantidad} min='1' onChange={e => setFormGasto(f => ({ ...f, cantidad: e.target.value }))}
-                    style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #ddd', fontSize: 14 }} />
-                </div>
+
+                {formGasto.comprador_id && (
+                  <div style={{ marginBottom: 16 }}>
+                    <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 8 }}>¿A quién le dio las entradas? <span style={{ color: '#7F77DD' }}>({formGasto.receptores.length} seleccionados)</span></label>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {amigosParaSeleccionar.map(a => {
+                        const seleccionado = formGasto.receptores.includes(a.id)
+                        return (
+                          <div key={a.id} onClick={() => toggleReceptor(a.id)} style={{
+                            display: 'flex', alignItems: 'center', gap: 10,
+                            padding: '8px 12px', borderRadius: 10, cursor: 'pointer',
+                            background: seleccionado ? '#EEEDFE' : '#f8f8f8',
+                            border: seleccionado ? '1px solid #AFA9EC' : '1px solid #eee',
+                          }}>
+                            <Avatar amigo={a} size={28} />
+                            <span style={{ fontSize: 13, flex: 1, fontWeight: seleccionado ? 500 : 400, color: seleccionado ? '#3C3489' : 'var(--color-text-primary)' }}>{a.nombre}</span>
+                            <span style={{ fontSize: 16, color: seleccionado ? '#7F77DD' : '#ddd' }}>{seleccionado ? '✓' : '○'}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 <div style={{ display: 'flex', gap: 8 }}>
-                  <button onClick={() => setMostrarFormGasto(false)} style={{ flex: 1, padding: 10, borderRadius: 8, border: '1px solid #ddd', background: 'white', fontSize: 13 }}>Cancelar</button>
-                  <button onClick={guardarGasto} style={{ flex: 1, padding: 10, borderRadius: 8, border: 'none', background: '#7F77DD', color: 'white', fontSize: 13, fontWeight: 500 }}>Guardar</button>
+                  <button onClick={() => { setMostrarFormGasto(false); setFormGasto({ comprador_id: '', precio_entrada: '', receptores: [] }) }}
+                    style={{ flex: 1, padding: 10, borderRadius: 8, border: '1px solid #ddd', background: 'white', fontSize: 13 }}>Cancelar</button>
+                  <button onClick={guardarGasto}
+                    style={{ flex: 1, padding: 10, borderRadius: 8, border: 'none', background: '#7F77DD', color: 'white', fontSize: 13, fontWeight: 500 }}>Guardar</button>
                 </div>
               </div>
             )}
