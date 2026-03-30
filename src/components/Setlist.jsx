@@ -13,24 +13,21 @@ export default function Setlist({ concierto, onActualizado }) {
       spotify_url: spotifyUrl || null,
       setlist: setlistText || null,
     }).eq('id', concierto.id)
+    concierto.spotify_url = spotifyUrl
+    concierto.setlist = setlistText
     setGuardando(false)
     setEditando(false)
-    onActualizado()
   }
 
   const abrirSpotify = () => {
-    if (!concierto.spotify_url) return
-    let url = concierto.spotify_url
-    if (url.includes('open.spotify.com')) {
-      url = url.replace('https://open.spotify.com', 'spotify:')
-        .replace('/playlist/', ':playlist:')
-        .replace('/album/', ':album:')
-        .replace('/track/', ':track:')
-      window.location.href = url
-      setTimeout(() => { window.open(concierto.spotify_url, '_blank') }, 1000)
-    } else {
-      window.open(url, '_blank')
-    }
+    const url = concierto.spotify_url
+    if (!url) return
+    window.open(url, '_blank')
+  }
+
+  const abrirSetlistFm = () => {
+    const artista = encodeURIComponent(concierto.artista)
+    window.open('https://www.setlist.fm/search?query=' + artista, '_blank')
   }
 
   const canciones = concierto.setlist
@@ -46,9 +43,7 @@ export default function Setlist({ concierto, onActualizado }) {
 
       <div style={{ background: 'white', borderRadius: 12, padding: 16, marginBottom: 12 }}>
         <div style={{ marginBottom: 14 }}>
-          <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 4 }}>
-            Enlace de playlist en Spotify
-          </label>
+          <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 4 }}>Enlace de playlist en Spotify</label>
           <input value={spotifyUrl} onChange={e => setSpotifyUrl(e.target.value)}
             placeholder='https://open.spotify.com/playlist/...'
             style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #ddd', fontSize: 13 }} />
@@ -56,13 +51,10 @@ export default function Setlist({ concierto, onActualizado }) {
             Abre Spotify → playlist → compartir → copiar enlace
           </div>
         </div>
-
         <div>
-          <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 4 }}>
-            Setlist — una canción por línea
-          </label>
+          <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 4 }}>Setlist — una canción por línea</label>
           <textarea value={setlistText} onChange={e => setSetlistText(e.target.value)}
-            placeholder={'Enter Sandman\nNothing Else Matters\nOne\nMaster of Puppets'}
+            placeholder={'Enter Sandman\nNothing Else Matters\nOne'}
             rows={8}
             style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #ddd', fontSize: 13, resize: 'vertical', fontFamily: 'inherit' }} />
         </div>
@@ -88,29 +80,45 @@ export default function Setlist({ concierto, onActualizado }) {
         }}>✏️ Editar</button>
       </div>
 
-      {concierto.spotify_url && (
+      {concierto.spotify_url ? (
         <button onClick={abrirSpotify} style={{
           width: '100%', padding: 14, borderRadius: 12, border: 'none',
           background: '#1DB954', color: 'white', cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-          marginBottom: 16, fontSize: 15, fontWeight: 500,
+          marginBottom: 12, fontSize: 15, fontWeight: 500,
         }}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
             <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
           </svg>
           Abrir playlist en Spotify
         </button>
+      ) : (
+        <div style={{ background: '#f8f8f8', borderRadius: 12, padding: 14, marginBottom: 12, textAlign: 'center' }}>
+          <div style={{ fontSize: 13, color: '#aaa', marginBottom: 8 }}>Sin playlist de Spotify todavía</div>
+          <button onClick={() => setEditando(true)} style={{
+            background: '#1DB954', color: 'white', border: 'none',
+            borderRadius: 20, padding: '6px 16px', fontSize: 12, fontWeight: 500, cursor: 'pointer'
+          }}>+ Añadir playlist</button>
+        </div>
       )}
 
+      <button onClick={abrirSetlistFm} style={{
+        width: '100%', padding: 12, borderRadius: 12, border: 'none',
+        background: '#FF6B35', color: 'white', cursor: 'pointer',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+        marginBottom: 16, fontSize: 14, fontWeight: 500,
+      }}>
+        🎵 Ver setlist en setlist.fm
+      </button>
+
       {canciones.length > 0 && (
-        <div style={{ background: 'white', borderRadius: 12, padding: 14, marginBottom: 12 }}>
+        <div style={{ background: 'white', borderRadius: 12, padding: 14 }}>
           <div style={{ fontSize: 11, fontWeight: 500, color: '#888', marginBottom: 10 }}>
             {canciones.length} CANCIONES
           </div>
           {canciones.map((c, i) => (
             <div key={i} style={{
-              display: 'flex', alignItems: 'center', gap: 12,
-              padding: '8px 0',
+              display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0',
               borderBottom: i < canciones.length - 1 ? '0.5px solid #f0f0f0' : 'none'
             }}>
               <div style={{
@@ -119,24 +127,17 @@ export default function Setlist({ concierto, onActualizado }) {
                 justifyContent: 'center', fontSize: 11, color: '#888',
                 flexShrink: 0, fontWeight: 500
               }}>{i + 1}</div>
-              <span style={{ fontSize: 14, color: 'var(--color-text-primary)' }}>{c}</span>
+              <span style={{ fontSize: 14 }}>{c}</span>
             </div>
           ))}
         </div>
       )}
 
       {!concierto.spotify_url && canciones.length === 0 && (
-        <div style={{
-          background: 'white', borderRadius: 12, padding: 24,
-          textAlign: 'center', border: '1px dashed #ddd'
-        }}>
+        <div style={{ background: 'white', borderRadius: 12, padding: 24, textAlign: 'center', border: '1px dashed #ddd', marginTop: 8 }}>
           <div style={{ fontSize: 32, marginBottom: 8 }}>🎵</div>
           <div style={{ fontSize: 14, fontWeight: 500, color: '#888', marginBottom: 4 }}>Sin setlist todavía</div>
-          <div style={{ fontSize: 12, color: '#aaa', marginBottom: 14 }}>Añade la playlist de Spotify o las canciones del concierto</div>
-          <button onClick={() => setEditando(true)} style={{
-            background: '#1DB954', color: 'white', border: 'none',
-            borderRadius: 20, padding: '8px 20px', fontSize: 13, fontWeight: 500, cursor: 'pointer'
-          }}>+ Añadir setlist</button>
+          <div style={{ fontSize: 12, color: '#aaa', marginBottom: 14 }}>Añade la playlist de Spotify o las canciones</div>
         </div>
       )}
     </div>
