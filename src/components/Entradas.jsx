@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../supabase'
 
 export default function Entradas({ conciertos, amigos }) {
@@ -13,7 +13,25 @@ export default function Entradas({ conciertos, amigos }) {
   const [formEntrada, setFormEntrada] = useState({ amigo_id: '', cantidad: 1, pagada: false })
   const [formGasto, setFormGasto] = useState({ comprador_id: '', precio_entrada: '', cantidad: 1 })
 
+  // NUEVO: estado para el menú editar y modal subir entrada
+  const [menuEditarId, setMenuEditarId] = useState(null)
+  const [modalSubirEntrada, setModalSubirEntrada] = useState(null) // gasto_id
+  const [modalEditarGasto, setModalEditarGasto] = useState(null)   // objeto gasto
+  const [formEditarGasto, setFormEditarGasto] = useState({ comprador_id: '', precio_entrada: '', cantidad: 1 })
+  const menuRef = useRef(null)
+
   useEffect(() => { if (concierto) cargarDatos() }, [concierto])
+
+  // Cerrar menú al hacer click fuera
+  useEffect(() => {
+    const handleClick = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setMenuEditarId(null)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
 
   const cargarDatos = async () => {
     const [e, a, g] = await Promise.all([
@@ -84,8 +102,29 @@ export default function Entradas({ conciertos, amigos }) {
   }
 
   const borrarGasto = async (id) => {
+    if (!confirm('¿Eliminar esta compra y todos sus pagos?')) return
     await supabase.from('gastos').delete().eq('id', id)
+    setMenuEditarId(null)
     cargarDatos()
+  }
+
+  // NUEVO: guardar edición de gasto
+  const guardarEdicionGasto = async () => {
+    if (!formEditarGasto.comprador_id || !formEditarGasto.precio_entrada) { alert('Rellena todos los campos'); return }
+    await supabase.from('gastos').update({
+      comprador_id: formEditarGasto.comprador_id,
+      precio_entrada: parseFloat(formEditarGasto.precio_entrada),
+      cantidad: parseInt(formEditarGasto.cantidad),
+    }).eq('id', modalEditarGasto.id)
+    setModalEditarGasto(null)
+    cargarDatos()
+  }
+
+  // NUEVO: abrir modal editar
+  const abrirEditarGasto = (g) => {
+    setFormEditarGasto({ comprador_id: g.comprador_id, precio_entrada: g.precio_entrada, cantidad: g.cantidad })
+    setModalEditarGasto(g)
+    setMenuEditarId(null)
   }
 
   const amigosConEntrada = entradas.map(e => e.amigo_id)
@@ -233,14 +272,84 @@ export default function Entradas({ conciertos, amigos }) {
                 const cobrados = pg.filter(p => p.pagado)
                 return (
                   <div key={g.id} style={{ background: 'white', borderRadius: 12, padding: 14, marginBottom: 12, border: '1px solid #eee' }}>
+                    
+                    {/* CABECERA DE TARJETA */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
                       <Av a={g.amigos} />
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: 14, fontWeight: 500 }}>{g.amigos?.nombre} compró</div>
-                        <div style={{ fontSize: 12, color: '#888' }}>{g.cantidad} entrada{g.cantidad > 1 ? 's' : ''} · {g.precio_entrada}€ c/u · <span style={{ fontWeight: 500, color: '#534AB7' }}>{(g.precio_entrada * g.cantidad).toFixed(0)}€</span></div>
+                        <div style={{ fontSize: 12, color: '#888' }}>
+                          {g.cantidad} entrada{g.cantidad > 1 ? 's' : ''} · {g.precio_entrada}€ c/u ·{' '}
+                          <span style={{ fontWeight: 500, color: '#534AB7' }}>{(g.precio_entrada * g.cantidad).toFixed(0)}€ total</span>
+                        </div>
                       </div>
-                      <button onClick={() => borrarGasto(g.id)} style={{ background: 'none', border: 'none', fontSize: 16, cursor: 'pointer', color: '#ccc' }}>🗑️</button>
+
+                      {/* BOTONES: Subir entrada + Editar */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, position: 'relative' }} ref={menuEditarId === g.id ? menuRef : null}>
+                        
+                        {/* BOTÓN ÚNICO "Subir entrada" con dropdown */}
+                        <div style={{ position: 'relative' }}>
+                          <button
+                            onClick={() => setModalSubirEntrada(modalSubirEntrada === g.id ? null : g.id)}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: 4,
+                              padding: '5px 10px', borderRadius: 8,
+                              border: '1px solid #AFA9EC', background: '#EEEDFE',
+                              color: '#3C3489', fontSize: 12, fontWeight: 500, cursor: 'pointer'
+                            }}>
+                            🎟 Subir entrada ▾
+                          </button>
+                          {modalSubirEntrada === g.id && (
+                            <div style={{
+                              position: 'absolute', top: '110%', right: 0, zIndex: 100,
+                              background: 'white', borderRadius: 10, boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
+                              border: '1px solid #eee', minWidth: 160, overflow: 'hidden'
+                            }}>
+                              <button onClick={() => { alert('Función: subir archivo de entrada'); setModalSubirEntrada(null) }}
+                                style={{ width: '100%', padding: '11px 14px', textAlign: 'left', background: 'none', border: 'none', fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
+                                📎 Subir archivo
+                              </button>
+                              <div style={{ height: 1, background: '#f0f0f0' }} />
+                              <button onClick={() => { alert('Función: pegar imagen'); setModalSubirEntrada(null) }}
+                                style={{ width: '100%', padding: '11px 14px', textAlign: 'left', background: 'none', border: 'none', fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
+                                📋 Pegar imagen
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* BOTÓN EDITAR con dropdown */}
+                        <div style={{ position: 'relative' }}>
+                          <button
+                            onClick={() => setMenuEditarId(menuEditarId === g.id ? null : g.id)}
+                            style={{
+                              padding: '5px 10px', borderRadius: 8,
+                              border: '1px solid #ddd', background: 'white',
+                              color: '#555', fontSize: 12, fontWeight: 500, cursor: 'pointer'
+                            }}>
+                            ✏️ Editar ▾
+                          </button>
+                          {menuEditarId === g.id && (
+                            <div style={{
+                              position: 'absolute', top: '110%', right: 0, zIndex: 100,
+                              background: 'white', borderRadius: 10, boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
+                              border: '1px solid #eee', minWidth: 160, overflow: 'hidden'
+                            }}>
+                              <button onClick={() => abrirEditarGasto(g)}
+                                style={{ width: '100%', padding: '11px 14px', textAlign: 'left', background: 'none', border: 'none', fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
+                                ✏️ Modificar datos
+                              </button>
+                              <div style={{ height: 1, background: '#f0f0f0' }} />
+                              <button onClick={() => borrarGasto(g.id)}
+                                style={{ width: '100%', padding: '11px 14px', textAlign: 'left', background: 'none', border: 'none', fontSize: 13, color: '#E24B4A', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
+                                🗑️ Eliminar
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
+
                     {pendientes.length > 0 && (
                       <div style={{ marginBottom: 8 }}>
                         <div style={{ fontSize: 10, color: '#A32D2D', marginBottom: 6, fontWeight: 500 }}>DEBEN PAGAR A {g.amigos?.nombre.toUpperCase()}</div>
@@ -270,6 +379,48 @@ export default function Entradas({ conciertos, amigos }) {
                   </div>
                 )
               })}
+
+              {/* MODAL EDITAR GASTO */}
+              {modalEditarGasto && (
+                <div style={{
+                  position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 200,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20
+                }}>
+                  <div style={{ background: 'white', borderRadius: 16, padding: 20, width: '100%', maxWidth: 360 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: '#3C3489', marginBottom: 16 }}>✏️ MODIFICAR COMPRA</div>
+                    <div style={{ marginBottom: 12 }}>
+                      <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 4 }}>¿Quién compró?</label>
+                      <select value={formEditarGasto.comprador_id} onChange={e => setFormEditarGasto(f => ({ ...f, comprador_id: e.target.value }))}
+                        style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #ddd', fontSize: 14, background: 'white' }}>
+                        <option value=''>— Selecciona —</option>
+                        {amigos.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+                      </select>
+                    </div>
+                    <div style={{ marginBottom: 12 }}>
+                      <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 4 }}>Precio por entrada (€)</label>
+                      <input type='number' value={formEditarGasto.precio_entrada}
+                        onChange={e => setFormEditarGasto(f => ({ ...f, precio_entrada: e.target.value }))}
+                        style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #ddd', fontSize: 14 }} />
+                    </div>
+                    <div style={{ marginBottom: 16 }}>
+                      <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 4 }}>Entradas compradas</label>
+                      <input type='number' value={formEditarGasto.cantidad} min='1'
+                        onChange={e => setFormEditarGasto(f => ({ ...f, cantidad: e.target.value }))}
+                        style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #ddd', fontSize: 14 }} />
+                    </div>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button onClick={() => setModalEditarGasto(null)}
+                        style={{ flex: 1, padding: 10, borderRadius: 8, border: '1px solid #ddd', background: 'white', fontSize: 13 }}>
+                        Cancelar
+                      </button>
+                      <button onClick={guardarEdicionGasto}
+                        style={{ flex: 1, padding: 10, borderRadius: 8, border: 'none', background: '#7F77DD', color: 'white', fontSize: 13, fontWeight: 500 }}>
+                        Guardar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {mostrarFormGasto && (
                 <div style={{ background: 'white', borderRadius: 12, padding: 16, marginBottom: 12, border: '1px solid #7F77DD' }}>
