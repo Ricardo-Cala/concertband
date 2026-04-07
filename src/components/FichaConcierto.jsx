@@ -14,9 +14,26 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
   const [mostrarFormGasto, setMostrarFormGasto] = useState(false)
   const [formGasto, setFormGasto] = useState({ comprador_id: '', precio_entrada: '', receptores: [] })
   const [toast, setToast] = useState(null)
+
+  // NUEVOS ESTADOS
+  const [menuSubirId, setMenuSubirId] = useState(null)
+  const [menuEditarId, setMenuEditarId] = useState(null)
+  const [gastoEditando, setGastoEditando] = useState(null)
+  const [formEditarGasto, setFormEditarGasto] = useState({ comprador_id: '', precio_entrada: '' })
+
   const mostrarToast = (mensaje, tipo = 'ok') => setToast({ mensaje, tipo })
 
   useEffect(() => { cargarDatos() }, [])
+
+  // Cerrar dropdowns al hacer click fuera
+  useEffect(() => {
+    const handleClick = () => {
+      setMenuSubirId(null)
+      setMenuEditarId(null)
+    }
+    document.addEventListener('click', handleClick)
+    return () => document.removeEventListener('click', handleClick)
+  }, [])
 
   const cargarDatos = async () => {
     const [a, g, t, h] = await Promise.all([
@@ -91,6 +108,17 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
     setFormGasto({ comprador_id: '', precio_entrada: '', receptores: [] })
     cargarDatos()
     mostrarToast('Comprador registrado')
+  }
+
+  const guardarEdicionGasto = async () => {
+    if (!formEditarGasto.comprador_id || !formEditarGasto.precio_entrada) { alert('Rellena todos los campos'); return }
+    await supabase.from('gastos').update({
+      comprador_id: formEditarGasto.comprador_id,
+      precio_entrada: parseFloat(formEditarGasto.precio_entrada),
+    }).eq('id', gastoEditando.id)
+    setGastoEditando(null)
+    cargarDatos()
+    mostrarToast('Compra actualizada')
   }
 
   const togglePago = async (p) => {
@@ -277,7 +305,11 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
                           <div style={{ fontSize: 14, fontWeight: 500 }}>{g.amigos?.nombre} compró</div>
                           <div style={{ fontSize: 12, color: '#888' }}>{g.cantidad} entrada{g.cantidad > 1 ? 's' : ''} · {Number(g.precio_entrada).toFixed(2)}€ c/u · <span style={{ fontWeight: 500, color: '#534AB7' }}>{(g.precio_entrada * g.cantidad).toFixed(2)}€ total</span></div>
                         </div>
-                        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+
+                        {/* BOTONES UNIFICADOS */}
+                        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }} onClick={e => e.stopPropagation()}>
+
+                          {/* BOTÓN SUBIR ENTRADA */}
                           {g.pdf_url ? (
                             <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                               <button onClick={() => window.open(g.pdf_url, '_blank')} style={{
@@ -289,25 +321,98 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
                               }}>✕</button>
                             </div>
                           ) : (
-                            <div style={{ display: 'flex', gap: 4 }}>
-                              <label style={{
-                                background: '#f0f0f0', border: 'none', borderRadius: 8,
-                                padding: '4px 10px', fontSize: 11, color: '#888', cursor: 'pointer',
-                                display: 'flex', alignItems: 'center', gap: 4
-                              }}>
-                                📎 Subir entradas
-                                <input type='file' accept='application/pdf,image/*' style={{ display: 'none' }}
-                                  onChange={e => subirEntrada(g, e.target.files[0])} />
-                              </label>
-                              <button onClick={() => pegarEntrada(g)} style={{
-                                background: '#f0f0f0', border: 'none', borderRadius: 8,
-                                padding: '4px 10px', fontSize: 11, color: '#888', cursor: 'pointer'
-                              }}>📋 Pegar</button>
+                            <div style={{ position: 'relative' }}>
+                              <button
+                                onClick={() => setMenuSubirId(menuSubirId === g.id ? null : g.id)}
+                                style={{
+                                  background: '#f0f0f0', border: 'none', borderRadius: 8,
+                                  padding: '4px 10px', fontSize: 11, color: '#555', cursor: 'pointer',
+                                  display: 'flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap'
+                                }}>
+                                🎟 Subir ▾
+                              </button>
+                              {menuSubirId === g.id && (
+                                <div style={{
+                                  position: 'absolute', top: '110%', right: 0, zIndex: 100,
+                                  background: 'white', borderRadius: 10, boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+                                  border: '1px solid #eee', minWidth: 155, overflow: 'hidden'
+                                }}>
+                                  <label style={{
+                                    width: '100%', padding: '11px 14px',
+                                    display: 'flex', alignItems: 'center', gap: 8,
+                                    fontSize: 13, cursor: 'pointer', boxSizing: 'border-box'
+                                  }}>
+                                    📎 Subir archivo
+                                    <input type='file' accept='application/pdf,image/*' style={{ display: 'none' }}
+                                      onChange={e => { subirEntrada(g, e.target.files[0]); setMenuSubirId(null) }} />
+                                  </label>
+                                  <div style={{ height: 1, background: '#f0f0f0' }} />
+                                  <button onClick={() => { pegarEntrada(g); setMenuSubirId(null) }}
+                                    style={{
+                                      width: '100%', padding: '11px 14px', textAlign: 'left',
+                                      background: 'none', border: 'none', fontSize: 13, cursor: 'pointer',
+                                      display: 'flex', alignItems: 'center', gap: 8
+                                    }}>
+                                    📋 Pegar imagen
+                                  </button>
+                                </div>
+                              )}
                             </div>
                           )}
-                          <button onClick={() => borrarGasto(g.id)} style={{ background: 'none', border: 'none', fontSize: 16, cursor: 'pointer', color: '#ccc' }}>🗑️</button>
+
+                          {/* BOTÓN EDITAR — sustituye la papelera */}
+                          <div style={{ position: 'relative' }}>
+                            <button
+                              onClick={() => setMenuEditarId(menuEditarId === g.id ? null : g.id)}
+                              style={{
+                                background: '#f0f0f0', border: 'none', borderRadius: 8,
+                                padding: '4px 10px', fontSize: 11, color: '#555', cursor: 'pointer',
+                                whiteSpace: 'nowrap'
+                              }}>
+                              ✏️ Editar ▾
+                            </button>
+                            {menuEditarId === g.id && (
+                              <div style={{
+                                position: 'absolute', top: '110%', right: 0, zIndex: 100,
+                                background: 'white', borderRadius: 10, boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+                                border: '1px solid #eee', minWidth: 155, overflow: 'hidden'
+                              }}>
+                                <button
+                                  onClick={() => {
+                                    setFormEditarGasto({ comprador_id: g.comprador_id, precio_entrada: g.precio_entrada })
+                                    setGastoEditando(g)
+                                    setMenuEditarId(null)
+                                  }}
+                                  style={{
+                                    width: '100%', padding: '11px 14px', textAlign: 'left',
+                                    background: 'none', border: 'none', fontSize: 13, cursor: 'pointer',
+                                    display: 'flex', alignItems: 'center', gap: 8
+                                  }}>
+                                  ✏️ Modificar datos
+                                </button>
+                                <div style={{ height: 1, background: '#f0f0f0' }} />
+                                <button
+                                  onClick={() => {
+                                    if (confirm('¿Eliminar esta compra y todos sus pagos?')) {
+                                      borrarGasto(g.id)
+                                      setMenuEditarId(null)
+                                    }
+                                  }}
+                                  style={{
+                                    width: '100%', padding: '11px 14px', textAlign: 'left',
+                                    background: 'none', border: 'none', fontSize: 13,
+                                    color: '#E24B4A', cursor: 'pointer',
+                                    display: 'flex', alignItems: 'center', gap: 8
+                                  }}>
+                                  🗑️ Eliminar
+                                </button>
+                              </div>
+                            )}
+                          </div>
+
                         </div>
                       </div>
+
                       {pendientesG.length > 0 && (
                         <div style={{ marginBottom: 8 }}>
                           <div style={{ fontSize: 10, color: '#A32D2D', marginBottom: 6, fontWeight: 500 }}>DEBEN PAGAR A {g.amigos?.nombre.toUpperCase()}</div>
@@ -433,6 +538,43 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
         )}
 
       </div>
+
+      {/* MODAL EDITAR GASTO */}
+      {gastoEditando && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 200,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20
+        }}>
+          <div style={{ background: 'white', borderRadius: 16, padding: 20, width: '100%', maxWidth: 360 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: '#3C3489', marginBottom: 16 }}>✏️ MODIFICAR COMPRA</div>
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 4 }}>¿Quién compró?</label>
+              <select value={formEditarGasto.comprador_id} onChange={e => setFormEditarGasto(f => ({ ...f, comprador_id: e.target.value }))}
+                style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #ddd', fontSize: 14, background: 'white' }}>
+                <option value=''>— Selecciona —</option>
+                {amigos.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+              </select>
+            </div>
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 4 }}>Precio por entrada (€)</label>
+              <input type='number' value={formEditarGasto.precio_entrada} step='0.01'
+                onChange={e => setFormEditarGasto(f => ({ ...f, precio_entrada: e.target.value }))}
+                style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #ddd', fontSize: 14 }} />
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => setGastoEditando(null)}
+                style={{ flex: 1, padding: 10, borderRadius: 8, border: '1px solid #ddd', background: 'white', fontSize: 13 }}>
+                Cancelar
+              </button>
+              <button onClick={guardarEdicionGasto}
+                style={{ flex: 1, padding: 10, borderRadius: 8, border: 'none', background: '#7F77DD', color: 'white', fontSize: 13, fontWeight: 500 }}>
+                Guardar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {toast && <Toast mensaje={toast.mensaje} tipo={toast.tipo} onClose={() => setToast(null)} />}
     </div>
   )
