@@ -149,7 +149,7 @@ export default function Grupo({ amigos, onActualizado }) {
     onActualizado()
   }
 
-  const subirFoto = async (amigo, archivo) => {
+ const subirFoto = async (amigo, archivo) => {
     if (!archivo) return
     setSubiendo(amigo.id)
     const ext = archivo.name.split('.').pop()
@@ -157,6 +157,7 @@ export default function Grupo({ amigos, onActualizado }) {
     await supabase.storage.from('avatares').upload(path, archivo, { upsert: true })
     const { data } = supabase.storage.from('avatares').getPublicUrl(path)
     await supabase.from('amigos').update({ foto_url: data.publicUrl + '?t=' + Date.now() }).eq('id', amigo.id)
+    if (fileRefs.current[amigo.id]) fileRefs.current[amigo.id].value = ''
     setSubiendo(null)
     onActualizado()
   }
