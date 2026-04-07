@@ -15,7 +15,7 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
   const [formGasto, setFormGasto] = useState({ comprador_id: '', precio_entrada: '', receptores: [] })
   const [toast, setToast] = useState(null)
 
-  // NUEVOS ESTADOS
+  // ESTADOS DROPDOWN Y EDICIÓN
   const [menuSubirId, setMenuSubirId] = useState(null)
   const [menuEditarId, setMenuEditarId] = useState(null)
   const [gastoEditando, setGastoEditando] = useState(null)
@@ -25,7 +25,6 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
 
   useEffect(() => { cargarDatos() }, [])
 
-  // Cerrar dropdowns al hacer click fuera
   useEffect(() => {
     const handleClick = () => {
       setMenuSubirId(null)
@@ -52,6 +51,14 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
     } else {
       setPagos([])
     }
+  }
+
+  const compartirWhatsApp = () => {
+    const fecha = new Date(concierto.fecha).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+    const fechaCapitalizada = fecha.charAt(0).toUpperCase() + fecha.slice(1)
+    const mensaje = `🎵 ${concierto.artista}\n📅 ${fechaCapitalizada}\n📍 ${concierto.recinto}, ${concierto.ciudad}\n¡Apúntate en la app BOLOS GRUPI !!!`
+    const url = `https://wa.me/?text=${encodeURIComponent(mensaje)}`
+    window.open(url, '_blank')
   }
 
   const setEstadoAsistencia = async (amigoId, estado) => {
@@ -199,6 +206,8 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
 
   return (
     <div style={{ maxWidth: 390, margin: '0 auto', background: 'white', minHeight: '100vh' }}>
+
+      {/* ENCABEZADO */}
       <div style={{ background: '#1a1a2e', padding: '16px 20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
           <button onClick={onVolver} style={{ background: 'none', border: 'none', color: 'white', fontSize: 22, cursor: 'pointer', padding: 0 }}>‹</button>
@@ -208,7 +217,21 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
               {new Date(concierto.fecha).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} · {concierto.recinto}, {concierto.ciudad}
             </div>
           </div>
-          <button onClick={onEditar} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', borderRadius: 8, padding: '4px 10px', fontSize: 12, cursor: 'pointer' }}>✏️ Editar</button>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button onClick={compartirWhatsApp} style={{
+              background: '#25D366', border: 'none', color: 'white',
+              borderRadius: 8, padding: '4px 10px', fontSize: 12, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: 4, fontWeight: 500
+            }}>
+              📲 Compartir
+            </button>
+            <button onClick={onEditar} style={{
+              background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white',
+              borderRadius: 8, padding: '4px 10px', fontSize: 12, cursor: 'pointer'
+            }}>
+              ✏️ Editar
+            </button>
+          </div>
         </div>
         <div style={{ display: 'flex', gap: 6 }}>
           <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 500, background: concierto.estado === 'confirmado' ? '#EAF3DE' : '#FAEEDA', color: concierto.estado === 'confirmado' ? '#27500A' : '#633806' }}>{concierto.estado}</span>
@@ -217,6 +240,7 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
         </div>
       </div>
 
+      {/* TABS */}
       <div style={{ display: 'flex', borderBottom: '0.5px solid #eee', background: 'white' }}>
         {['asistencia', 'entradas', 'setlist'].map(t => (
           <button key={t} onClick={() => setSubtab(t)} style={{
@@ -232,6 +256,7 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
 
       <div style={{ padding: 16 }}>
 
+        {/* TAB ASISTENCIA */}
         {subtab === 'asistencia' && (
           <div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 16 }}>
@@ -273,6 +298,7 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
           </div>
         )}
 
+        {/* TAB ENTRADAS */}
         {subtab === 'entradas' && (
           <div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 16 }}>
@@ -306,10 +332,9 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
                           <div style={{ fontSize: 12, color: '#888' }}>{g.cantidad} entrada{g.cantidad > 1 ? 's' : ''} · {Number(g.precio_entrada).toFixed(2)}€ c/u · <span style={{ fontWeight: 500, color: '#534AB7' }}>{(g.precio_entrada * g.cantidad).toFixed(2)}€ total</span></div>
                         </div>
 
-                        {/* BOTONES UNIFICADOS */}
+                        {/* BOTONES SUBIR Y EDITAR */}
                         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }} onClick={e => e.stopPropagation()}>
 
-                          {/* BOTÓN SUBIR ENTRADA */}
                           {g.pdf_url ? (
                             <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                               <button onClick={() => window.open(g.pdf_url, '_blank')} style={{
@@ -360,7 +385,6 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
                             </div>
                           )}
 
-                          {/* BOTÓN EDITAR — sustituye la papelera */}
                           <div style={{ position: 'relative' }}>
                             <button
                               onClick={() => setMenuEditarId(menuEditarId === g.id ? null : g.id)}
@@ -533,6 +557,7 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
           </div>
         )}
 
+        {/* TAB SETLIST */}
         {subtab === 'setlist' && (
           <Setlist concierto={concierto} onActualizado={() => {}} />
         )}
