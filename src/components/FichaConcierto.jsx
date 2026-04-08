@@ -4,7 +4,6 @@ import Avatar from './Avatar'
 import Toast from './Toast'
 import Setlist from './Setlist'
 import Album from './Album'
-import Album from './Album'
 import FichaViaje from './FichaViaje'
 
 export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }) {
