@@ -575,9 +575,7 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
         {subtab === 'fotos' && (
           <Album concierto={concierto} amigos={amigos} />
         )}
-        {subtab === 'fotos' && (
-          <Album concierto={concierto} amigos={amigos} />
-        )}
+        
 
       </div>
 
