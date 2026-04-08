@@ -3,6 +3,8 @@ import { supabase } from '../supabase'
 import Avatar from './Avatar'
 import Toast from './Toast'
 import Setlist from './Setlist'
+import Album from './Album'
+import Album from './Album'
 import FichaViaje from './FichaViaje'
 
 export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }) {
@@ -252,14 +254,14 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
 
       {/* TABS */}
       <div style={{ display: 'flex', borderBottom: '0.5px solid #eee', background: 'white' }}>
-        {['asistencia', 'entradas', 'setlist'].map(t => (
+        {['asistencia', 'entradas', 'setlist', 'fotos'].map(t => (
           <button key={t} onClick={() => setSubtab(t)} style={{
             flex: 1, padding: '10px 4px', fontSize: 11, fontWeight: 500,
             background: 'none', border: 'none', cursor: 'pointer',
             borderBottom: subtab === t ? '2px solid #7F77DD' : '2px solid transparent',
             color: subtab === t ? '#7F77DD' : '#888',
           }}>
-            {t === 'asistencia' ? '👋 Asistencia' : t === 'entradas' ? '🎟 Entradas' : '🎵 Setlist'}
+            {t === 'asistencia' ? '👋 Asistencia' : t === 'entradas' ? '🎟 Entradas' : t === 'setlist' ? '🎵 Setlist' : '📸 Fotos'}
           </button>
         ))}
       </div>
@@ -570,6 +572,12 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
         {/* TAB SETLIST */}
         {subtab === 'setlist' && (
           <Setlist concierto={concierto} onActualizado={() => {}} />
+        )}
+        {subtab === 'fotos' && (
+          <Album concierto={concierto} amigos={amigos} />
+        )}
+        {subtab === 'fotos' && (
+          <Album concierto={concierto} amigos={amigos} />
         )}
 
       </div>
