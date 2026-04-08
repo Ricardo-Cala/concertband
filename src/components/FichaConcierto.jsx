@@ -3,6 +3,7 @@ import { supabase } from '../supabase'
 import Avatar from './Avatar'
 import Toast from './Toast'
 import Setlist from './Setlist'
+import FichaViaje from './FichaViaje'
 
 export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }) {
   const [subtab, setSubtab] = useState('asistencia')
@@ -12,6 +13,7 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
   const [transporte, setTransporte] = useState(null)
   const [hotel, setHotel] = useState(null)
   const [mostrarFormGasto, setMostrarFormGasto] = useState(false)
+  const [fichaViaje, setFichaViaje] = useState(null)
   const [formGasto, setFormGasto] = useState({ comprador_id: '', precio_entrada: '', receptores: [] })
   const [toast, setToast] = useState(null)
 
@@ -235,8 +237,16 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
         </div>
         <div style={{ display: 'flex', gap: 6 }}>
           <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 500, background: concierto.estado === 'confirmado' ? '#EAF3DE' : '#FAEEDA', color: concierto.estado === 'confirmado' ? '#27500A' : '#633806' }}>{concierto.estado}</span>
-          {transporte && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 500, background: '#EEEDFE', color: '#3C3489' }}>{iconTransporte(transporte.tipo)} {transporte.tipo}</span>}
-          {hotel && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 500, background: '#E1F5EE', color: '#085041' }}>🏨 {hotel.nombre || 'Hotel'}</span>}
+          {transporte && (
+            <button onClick={() => setFichaViaje('transporte')} style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 500, background: '#EEEDFE', color: '#3C3489', border: 'none', cursor: 'pointer' }}>
+              {iconTransporte(transporte.tipo)} {transporte.tipo}
+            </button>
+          )}
+          {hotel && (
+            <button onClick={() => setFichaViaje('hotel')} style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 500, background: '#E1F5EE', color: '#085041', border: 'none', cursor: 'pointer' }}>
+              🏨 {hotel.nombre || 'Hotel'}
+            </button>
+          )}
         </div>
       </div>
 
@@ -600,6 +610,16 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
         </div>
       )}
 
+      {fichaViaje && (
+        <FichaViaje
+          tipo={fichaViaje}
+          datos={fichaViaje === 'transporte' ? transporte : hotel}
+          amigos={amigos}
+          conciertoId={concierto.id}
+          onCerrar={() => setFichaViaje(null)}
+          onActualizado={() => { setFichaViaje(null); cargarDatos() }}
+        />
+      )}
       {toast && <Toast mensaje={toast.mensaje} tipo={toast.tipo} onClose={() => setToast(null)} />}
     </div>
   )
