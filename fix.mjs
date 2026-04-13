@@ -1,27 +1,17 @@
-import { readFileSync, writeFileSync } from 'fs'
+import { writeFileSync } from 'fs'
+import { readFileSync } from 'fs'
 
 let code = readFileSync('src/components/Grupo.jsx', 'utf8')
 
-code = code.replace(
-  ` const subirFoto = async (amigo, archivo) => {
-    if (!archivo) return
-    setSubiendo(amigo.id)
-    const ext = archivo.name.split('.').pop()
-    const path = amigo.id + '.' + ext
-    await supabase.storage.from('avatares').upload(path, archivo, { upsert: true })
-    const { data } = supabase.storage.from('avatares').getPublicUrl(path)
-    await supabase.from('amigos').update({ foto_url: data.publicUrl + '?t=' + Date.now() }).eq('id', amigo.id)
-    if (fileRefs.current[amigo.id]) fileRefs.current[amigo.id].value = ''
-    setSubiendo(null)
-    onActualizado()
-  }`,
-  ` const subirFoto = async (amigo, archivo) => {
+// Reemplazar toda la función subirFoto
+const inicio = code.indexOf('const subirFoto')
+const fin = code.indexOf('\n  }', inicio) + 4
+const funcionNueva = `const subirFoto = async (amigo, archivo) => {
     if (!archivo) return
     setSubiendo(amigo.id)
     const ext = archivo.name.split('.').pop() || 'jpg'
-    const timestamp = Date.now()
-    const path = amigo.id + '-' + timestamp + '.' + ext
-    const { error } = await supabase.storage.from('avatares').upload(path, archivo, { upsert: false })
+    const path = amigo.id + '-' + Date.now() + '.' + ext
+    const { error } = await supabase.storage.from('avatares').upload(path, archivo)
     if (!error) {
       const { data } = supabase.storage.from('avatares').getPublicUrl(path)
       await supabase.from('amigos').update({ foto_url: data.publicUrl }).eq('id', amigo.id)
@@ -30,7 +20,8 @@ code = code.replace(
     setSubiendo(null)
     onActualizado()
   }`
-)
+
+code = code.slice(0, inicio) + funcionNueva + code.slice(fin)
 
 writeFileSync('src/components/Grupo.jsx', code)
-console.log('subirFoto corregido')
+console.log('subirFoto reescrito correctamente')
