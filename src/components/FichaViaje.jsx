@@ -7,6 +7,14 @@ export default function FichaViaje({ tipo, datos, amigos, onCerrar, onActualizad
   const [subiendo, setSubiendo] = useState(false)
   const [form, setForm] = useState({})
   const esTransporte = tipo === 'transporte'
+  const tipoNombre = () => {
+    const t = datos?.tipo || ''
+    if (t === 'Avión') return { ida: 'VUELO DE IDA', vuelta: 'VUELO DE VUELTA', numero: 'N° vuelo', numeroVuelta: 'N° vuelo vuelta', compania: 'Compañía', companiaVuelta: 'Compañía vuelta' }
+    if (t === 'Tren' || t === 'AVE') return { ida: 'TREN DE IDA', vuelta: 'TREN DE VUELTA', numero: 'N° tren', numeroVuelta: 'N° tren vuelta', compania: 'Compañía', companiaVuelta: 'Compañía vuelta' }
+    if (t === 'Autobús') return { ida: 'AUTOBÚS DE IDA', vuelta: 'AUTOBÚS DE VUELTA', numero: 'N° autobús', numeroVuelta: 'N° autobús vuelta', compania: 'Compañía', companiaVuelta: 'Compañía vuelta' }
+    return { ida: 'IDA', vuelta: 'VUELTA', numero: 'N° servicio', numeroVuelta: 'N° servicio vuelta', compania: 'Compañía', companiaVuelta: 'Compañía vuelta' }
+  }
+  const tn = tipoNombre()
 
   useEffect(() => {
     setForm(datos || {})
@@ -111,9 +119,9 @@ export default function FichaViaje({ tipo, datos, amigos, onCerrar, onActualizad
 
         {!editando && esTransporte && (
           <div>
-            <div style={{ fontSize: 11, fontWeight: 500, color: '#7F77DD', marginBottom: 8 }}>VUELO DE IDA</div>
-            {form.compania && <InfoRow label='Compañía' value={form.compania} />}
-            {form.numero_vuelo && <InfoRow label='N° vuelo/tren' value={form.numero_vuelo} />}
+            <div style={{ fontSize: 11, fontWeight: 500, color: '#7F77DD', marginBottom: 8 }}>{tn.ida}</div>
+            {form.compania && <InfoRow label={tn.compania} value={form.compania} />}
+            {form.numero_vuelo && <InfoRow label={tn.numero} value={form.numero_vuelo} />}
             {form.fecha_salida && (
               <InfoRow label='Salida' value={
                 formatFecha(form.fecha_salida) + (form.hora_salida ? ' · ' + form.hora_salida.slice(0,5) + 'h' : '')
@@ -125,10 +133,10 @@ export default function FichaViaje({ tipo, datos, amigos, onCerrar, onActualizad
               } />
             )}
             {(form.numero_vuelo_vuelta || form.fecha_salida_vuelta || form.compania_vuelta) && (
-              <div style={{ marginTop: 10, marginBottom: 4, fontSize: 11, fontWeight: 500, color: '#7F77DD' }}>VUELO DE VUELTA</div>
+              <div style={{ marginTop: 10, marginBottom: 4, fontSize: 11, fontWeight: 500, color: '#7F77DD' }}>{tn.vuelta}</div>
             )}
-            {form.compania_vuelta && <InfoRow label='Compañía' value={form.compania_vuelta} />}
-            {form.numero_vuelo_vuelta && <InfoRow label='N° vuelo' value={form.numero_vuelo_vuelta} />}
+            {form.compania_vuelta && <InfoRow label={tn.companiaVuelta} value={form.compania_vuelta} />}
+            {form.numero_vuelo_vuelta && <InfoRow label={tn.numeroVuelta} value={form.numero_vuelo_vuelta} />}
             {form.fecha_salida_vuelta && (
               <InfoRow label='Salida vuelta' value={
                 formatFecha(form.fecha_salida_vuelta) + (form.hora_salida_vuelta ? ' · ' + form.hora_salida_vuelta.slice(0,5) + 'h' : '')
@@ -213,9 +221,9 @@ export default function FichaViaje({ tipo, datos, amigos, onCerrar, onActualizad
 
         {editando && esTransporte && (
           <div>
-            <div style={{ fontSize: 12, fontWeight: 500, color: '#7F77DD', marginBottom: 8 }}>VUELO DE IDA</div>
-            {campo('Compañía', 'compania', 'text', 'Ej: Iberia, Renfe...')}
-            {campo('N° vuelo/tren', 'numero_vuelo', 'text', 'Ej: IB3456')}
+            <div style={{ fontSize: 12, fontWeight: 500, color: '#7F77DD', marginBottom: 8 }}>{tn.ida}</div>
+            {campo(tn.compania, 'compania', 'text', 'Ej: Iberia, Renfe...')}
+            {campo(tn.numero, 'numero_vuelo', 'text', 'Ej: IB3456')}
             <div style={{ marginBottom: 12 }}>
               <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 4 }}>¿Quién compró los billetes?</label>
               <select value={form.comprador_id || form.responsable_id || ''} onChange={e => set('responsable_id', e.target.value)}
@@ -228,9 +236,9 @@ export default function FichaViaje({ tipo, datos, amigos, onCerrar, onActualizad
             {campo('Hora de salida', 'hora_salida', 'time')}
             {campo('Fecha de llegada', 'fecha_llegada', 'date')}
             {campo('Hora de llegada', 'hora_llegada', 'time')}
-            <div style={{ fontSize: 12, fontWeight: 500, color: '#7F77DD', margin: '16px 0 8px' }}>VUELO DE VUELTA</div>
-            {campo('Compañía vuelta', 'compania_vuelta', 'text', 'Ej: Iberia, Ryanair...')}
-            {campo('N° vuelo vuelta', 'numero_vuelo_vuelta', 'text', 'Ej: FR 1446')}
+            <div style={{ fontSize: 12, fontWeight: 500, color: '#7F77DD', margin: '16px 0 8px' }}>{tn.vuelta}</div>
+            {campo(tn.companiaVuelta, 'compania_vuelta', 'text', 'Ej: Iberia, Ryanair...')}
+            {campo(tn.numeroVuelta, 'numero_vuelo_vuelta', 'text', 'Ej: FR 1446')}
             {campo('Fecha de salida vuelta', 'fecha_salida_vuelta', 'date')}
             {campo('Hora de salida vuelta', 'hora_salida_vuelta', 'time')}
             {campo('Fecha de llegada vuelta', 'fecha_llegada_vuelta', 'date')}
