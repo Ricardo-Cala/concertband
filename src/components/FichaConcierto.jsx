@@ -226,7 +226,7 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
               borderRadius: 8, padding: '4px 10px', fontSize: 12, cursor: 'pointer',
               display: 'flex', alignItems: 'center', gap: 4, fontWeight: 500
             }}>
-              📲 Compartir
+              📲 WhatsApp
             </button>
             <button onClick={onEditar} style={{
               background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white',
