@@ -123,6 +123,20 @@ export default function FichaViaje({ tipo, datos, amigos, onCerrar, onActualizad
                 formatFecha(form.fecha_llegada) + (form.hora_llegada ? ' · ' + form.hora_llegada.slice(0,5) + 'h' : '')
               } />
             )}
+            {(form.numero_vuelo_vuelta || form.fecha_salida_vuelta) && (
+              <div style={{ marginTop: 10, marginBottom: 4, fontSize: 11, fontWeight: 500, color: '#7F77DD' }}>VUELO DE VUELTA</div>
+            )}
+            {form.numero_vuelo_vuelta && <InfoRow label='N° vuelo vuelta' value={form.numero_vuelo_vuelta} />}
+            {form.fecha_salida_vuelta && (
+              <InfoRow label='Salida vuelta' value={
+                formatFecha(form.fecha_salida_vuelta) + (form.hora_salida_vuelta ? ' · ' + form.hora_salida_vuelta.slice(0,5) + 'h' : '')
+              } />
+            )}
+            {form.fecha_llegada_vuelta && (
+              <InfoRow label='Llegada vuelta' value={
+                formatFecha(form.fecha_llegada_vuelta) + (form.hora_llegada_vuelta ? ' · ' + form.hora_llegada_vuelta.slice(0,5) + 'h' : '')
+              } />
+            )}
             {form.comprador_id && (() => {
               const comprador = amigos.find(a => a.id === form.comprador_id || a.id === form.responsable_id)
               return comprador ? <InfoRow label='Compró los billetes' value={comprador.nombre} /> : null
@@ -211,6 +225,12 @@ export default function FichaViaje({ tipo, datos, amigos, onCerrar, onActualizad
             {campo('Hora de salida', 'hora_salida', 'time')}
             {campo('Fecha de llegada', 'fecha_llegada', 'date')}
             {campo('Hora de llegada', 'hora_llegada', 'time')}
+            <div style={{ fontSize: 12, fontWeight: 500, color: '#7F77DD', margin: '16px 0 8px' }}>VUELO DE VUELTA</div>
+            {campo('N° vuelo vuelta', 'numero_vuelo_vuelta', 'text', 'Ej: FR 1446')}
+            {campo('Fecha de salida vuelta', 'fecha_salida_vuelta', 'date')}
+            {campo('Hora de salida vuelta', 'hora_salida_vuelta', 'time')}
+            {campo('Fecha de llegada vuelta', 'fecha_llegada_vuelta', 'date')}
+            {campo('Hora de llegada vuelta', 'hora_llegada_vuelta', 'time')}
             <div style={{ marginBottom: 16 }}>
               <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 8 }}>¿Quién viaja?</label>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
