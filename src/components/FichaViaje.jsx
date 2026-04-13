@@ -111,6 +111,7 @@ export default function FichaViaje({ tipo, datos, amigos, onCerrar, onActualizad
 
         {!editando && esTransporte && (
           <div>
+            <div style={{ fontSize: 11, fontWeight: 500, color: '#7F77DD', marginBottom: 8 }}>VUELO DE IDA</div>
             {form.compania && <InfoRow label='Compañía' value={form.compania} />}
             {form.numero_vuelo && <InfoRow label='N° vuelo/tren' value={form.numero_vuelo} />}
             {form.fecha_salida && (
@@ -123,10 +124,11 @@ export default function FichaViaje({ tipo, datos, amigos, onCerrar, onActualizad
                 formatFecha(form.fecha_llegada) + (form.hora_llegada ? ' · ' + form.hora_llegada.slice(0,5) + 'h' : '')
               } />
             )}
-            {(form.numero_vuelo_vuelta || form.fecha_salida_vuelta) && (
+            {(form.numero_vuelo_vuelta || form.fecha_salida_vuelta || form.compania_vuelta) && (
               <div style={{ marginTop: 10, marginBottom: 4, fontSize: 11, fontWeight: 500, color: '#7F77DD' }}>VUELO DE VUELTA</div>
             )}
-            {form.numero_vuelo_vuelta && <InfoRow label='N° vuelo vuelta' value={form.numero_vuelo_vuelta} />}
+            {form.compania_vuelta && <InfoRow label='Compañía' value={form.compania_vuelta} />}
+            {form.numero_vuelo_vuelta && <InfoRow label='N° vuelo' value={form.numero_vuelo_vuelta} />}
             {form.fecha_salida_vuelta && (
               <InfoRow label='Salida vuelta' value={
                 formatFecha(form.fecha_salida_vuelta) + (form.hora_salida_vuelta ? ' · ' + form.hora_salida_vuelta.slice(0,5) + 'h' : '')
@@ -211,6 +213,7 @@ export default function FichaViaje({ tipo, datos, amigos, onCerrar, onActualizad
 
         {editando && esTransporte && (
           <div>
+            <div style={{ fontSize: 12, fontWeight: 500, color: '#7F77DD', marginBottom: 8 }}>VUELO DE IDA</div>
             {campo('Compañía', 'compania', 'text', 'Ej: Iberia, Renfe...')}
             {campo('N° vuelo/tren', 'numero_vuelo', 'text', 'Ej: IB3456')}
             <div style={{ marginBottom: 12 }}>
@@ -226,6 +229,7 @@ export default function FichaViaje({ tipo, datos, amigos, onCerrar, onActualizad
             {campo('Fecha de llegada', 'fecha_llegada', 'date')}
             {campo('Hora de llegada', 'hora_llegada', 'time')}
             <div style={{ fontSize: 12, fontWeight: 500, color: '#7F77DD', margin: '16px 0 8px' }}>VUELO DE VUELTA</div>
+            {campo('Compañía vuelta', 'compania_vuelta', 'text', 'Ej: Iberia, Ryanair...')}
             {campo('N° vuelo vuelta', 'numero_vuelo_vuelta', 'text', 'Ej: FR 1446')}
             {campo('Fecha de salida vuelta', 'fecha_salida_vuelta', 'date')}
             {campo('Hora de salida vuelta', 'hora_salida_vuelta', 'time')}
