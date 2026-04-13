@@ -64,7 +64,7 @@ export default function App() {
 
   const hoy = new Date(new Date().toDateString())
   const proximos = conciertos.filter(c => new Date(c.fecha) >= hoy)
-  const pasados = conciertos.filter(c => new Date(c.fecha) < hoy)
+  const pasados = conciertos.filter(c => new Date(c.fecha) < hoy).reverse()
 
   const tagEstado = (estado) => ({
     background: estado === 'confirmado' ? '#EAF3DE' : '#FAEEDA',
