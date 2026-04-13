@@ -126,7 +126,7 @@ export default function FichaViaje({ tipo, datos, amigos, onCerrar, onActualizad
               const conductor = amigos.find(a => a.id === cocheId)
               return conductor ? (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '0.5px solid #f0f0f0' }}>
-                  <Avatar amigo={conductor} size={32} />
+                  <Avatar amigo={conductor} size={38} />
                   <div>
                     <div style={{ fontSize: 11, color: '#888' }}>COCHE {i + 1}</div>
                     <div style={{ fontSize: 14, fontWeight: 500 }}>{conductor.nombre}</div>
@@ -180,7 +180,7 @@ export default function FichaViaje({ tipo, datos, amigos, onCerrar, onActualizad
                     const a = amigos.find(x => x.id === id)
                     return a ? (
                       <div key={id} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#EEEDFE', borderRadius: 20, padding: '4px 10px' }}>
-                        <Avatar amigo={a} size={20} />
+                        <Avatar amigo={a} size={24} />
                         <span style={{ fontSize: 12, color: '#3C3489' }}>{a.nombre}</span>
                       </div>
                     ) : null
@@ -256,7 +256,7 @@ export default function FichaViaje({ tipo, datos, amigos, onCerrar, onActualizad
                     background: seleccionado ? '#EEEDFE' : '#f8f8f8',
                     border: seleccionado ? '1px solid #AFA9EC' : '1px solid #eee',
                   }}>
-                    <Avatar amigo={a} size={28} />
+                    <Avatar amigo={a} size={34} />
                     <span style={{ fontSize: 13, flex: 1, fontWeight: seleccionado ? 500 : 400, color: seleccionado ? '#3C3489' : 'inherit' }}>{a.nombre}</span>
                     <span style={{ fontSize: 16, color: seleccionado ? '#7F77DD' : '#ddd' }}>{seleccionado ? '🚗' : '○'}</span>
                   </div>
@@ -306,7 +306,7 @@ export default function FichaViaje({ tipo, datos, amigos, onCerrar, onActualizad
                       background: sel ? '#EEEDFE' : '#f8f8f8',
                       border: sel ? '1px solid #AFA9EC' : '1px solid #eee',
                     }}>
-                      <Avatar amigo={a} size={28} />
+                      <Avatar amigo={a} size={34} />
                       <span style={{ fontSize: 13, flex: 1, fontWeight: sel ? 500 : 400, color: sel ? '#3C3489' : 'inherit' }}>{a.nombre}</span>
                       <span style={{ fontSize: 16, color: sel ? '#7F77DD' : '#ddd' }}>{sel ? '✓' : '○'}</span>
                     </div>

@@ -183,7 +183,7 @@ export default function Grupo({ amigos, onActualizado }) {
       avatar={
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
           <div style={{ position: 'relative', cursor: 'pointer' }} onClick={() => fileRefs.current[editando.id]?.click()}>
-            <Avatar amigo={{ ...editando, ...form }} size={80} />
+            <Avatar amigo={{ ...editando, ...form }} size={96} />
             <div style={{
               position: 'absolute', bottom: 0, right: 0,
               width: 26, height: 26, borderRadius: '50%',
@@ -220,7 +220,7 @@ export default function Grupo({ amigos, onActualizado }) {
           <div style={{ fontSize: 11, fontWeight: 500, color: '#633806', marginBottom: 8 }}>🎂 CUMPLEAÑOS PRÓXIMOS</div>
           {proximosCumples.map(a => (
             <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-              <Avatar amigo={a} size={24} />
+              <Avatar amigo={a} size={29} />
               <span style={{ fontSize: 13, flex: 1, color: '#633806' }}>{a.nombre}</span>
               <span style={{ fontSize: 12, color: '#854F0B', fontWeight: 500 }}>
                 {a.dias === 0 ? '¡Hoy! 🎉' : a.dias === 1 ? 'Mañana' : `en ${a.dias} días`}
@@ -243,7 +243,7 @@ export default function Grupo({ amigos, onActualizado }) {
             onMouseLeave={e => e.currentTarget.style.background = 'white'}
           >
             <div style={{ position: 'relative', flexShrink: 0 }}>
-              <Avatar amigo={a} size={44} />
+              <Avatar amigo={a} size={53} />
               <div style={{
                 position: 'absolute', bottom: 0, right: 0,
                 width: 16, height: 16, borderRadius: '50%',

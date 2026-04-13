@@ -22,7 +22,7 @@ export default function Header({ amigos }) {
         </div>
         <div style={{ display: 'flex', gap: 6 }}>
           {amigos.map(a => (
-            <Avatar key={a.id} amigo={a} size={28} />
+            <Avatar key={a.id} amigo={a} size={34} />
           ))}
         </div>
       </div>
