@@ -101,6 +101,11 @@ export default function App() {
           </div>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             <span style={tagEstado(c.estado)}>{c.estado}</span>
+            {c.hora_apertura && (
+              <span style={{ background: '#E1EAF5', color: '#1A3A5C', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 500 }}>
+                🕐 {c.hora_apertura.slice(0,5)}h
+              </span>
+            )}
             {c.transportes?.[0] && (
               <span style={{ background: '#EEEDFE', color: '#3C3489', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 500 }}>
                 {iconTransporte(c.transportes[0].tipo)} {c.transportes[0].tipo}
