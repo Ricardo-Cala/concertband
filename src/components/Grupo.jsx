@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import { supabase } from '../supabase'
 import Avatar from './Avatar'
 import FichaAmigo from './FichaAmigo'
+import FichaAmigo from './FichaAmigo'
 
 const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
 
@@ -119,11 +120,14 @@ function FormAmigo({ f, setF, onGuardar, onCancelar, titulo, avatar }) {
 export default function Grupo({ amigos, onActualizado }) {
   const [editando, setEditando] = useState(null)
   const [fichaAmigo, setFichaAmigo] = useState(null)
+  const [fichaAmigo, setFichaAmigo] = useState(null)
   const [form, setForm] = useState({ nombre: '', iniciales: '', color: '#534AB7', dia: '', mes: '', anio: '' })
   const [subiendo, setSubiendo] = useState(null)
   const [mostrarNuevo, setMostrarNuevo] = useState(false)
   const [formNuevo, setFormNuevo] = useState({ nombre: '', iniciales: '', color: '#534AB7', dia: '', mes: '', anio: '' })
   const fileRefs = useRef({})
+
+  const abrirFicha = (amigo) => setFichaAmigo(amigo)
 
   const abrirFicha = (amigo) => setFichaAmigo(amigo)
 
@@ -167,6 +171,15 @@ export default function Grupo({ amigos, onActualizado }) {
     setSubiendo(null)
     onActualizado()
   }
+
+  if (fichaAmigo) return (
+    <FichaAmigo
+      amigo={fichaAmigo}
+      amigos={amigos}
+      onCerrar={() => setFichaAmigo(null)}
+      onEditar={() => { setFichaAmigo(null); abrirEditar(fichaAmigo) }}
+    />
+  )
 
   if (fichaAmigo) return (
     <FichaAmigo
