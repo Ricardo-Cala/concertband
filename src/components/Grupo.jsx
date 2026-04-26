@@ -298,14 +298,8 @@ export default function Grupo({ amigos, onActualizado, onAbrirEstadisticas }) {
             onMouseEnter={e => e.currentTarget.style.background = '#f8f8f8'}
             onMouseLeave={e => e.currentTarget.style.background = 'white'}
           >
-            <div style={{ position: 'relative', flexShrink: 0 }}>
+            <div style={{ flexShrink: 0 }}>
               <Avatar amigo={a} size={53} />
-              <div style={{
-                position: 'absolute', bottom: 0, right: 0,
-                width: 16, height: 16, borderRadius: '50%',
-                background: '#7F77DD', border: '1.5px solid white',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8
-              }}>📷</div>
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--color-text-primary)' }}>{a.nombre}</div>
