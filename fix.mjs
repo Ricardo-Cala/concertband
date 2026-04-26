@@ -1,16 +1,44 @@
 import { readFileSync, writeFileSync } from 'fs'
 
-let code = readFileSync('src/App.jsx', 'utf8')
+let code = readFileSync('src/components/Grupo.jsx', 'utf8')
 
 code = code.replace(
-  `            <span style={tagEstado(c.estado)}>{c.estado}</span>`,
-  `            <span style={tagEstado(c.estado)}>{c.estado}</span>
-            {c.hora_apertura && (
-              <span style={{ background: '#E1EAF5', color: '#1A3A5C', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 500 }}>
-                🕐 {c.hora_apertura.slice(0,5)}h
-              </span>
-            )}`
+  `import Avatar from './Avatar'`,
+  `import Avatar from './Avatar'
+import FichaAmigo from './FichaAmigo'`
 )
 
-writeFileSync('src/App.jsx', code)
-console.log('Hora de apertura añadida a tarjetas')
+code = code.replace(
+  `  const [editando, setEditando] = useState(null)`,
+  `  const [editando, setEditando] = useState(null)
+  const [fichaAmigo, setFichaAmigo] = useState(null)`
+)
+
+code = code.replace(
+  `  const abrirEditar = (amigo) => {`,
+  `  const abrirFicha = (amigo) => setFichaAmigo(amigo)
+
+  const abrirEditar = (amigo) => {`
+)
+
+code = code.replace(
+  `  if (mostrarNuevo) return (`,
+  `  if (fichaAmigo) return (
+    <FichaAmigo
+      amigo={fichaAmigo}
+      amigos={amigos}
+      onCerrar={() => setFichaAmigo(null)}
+      onEditar={() => { setFichaAmigo(null); abrirEditar(fichaAmigo) }}
+    />
+  )
+
+  if (mostrarNuevo) return (`
+)
+
+code = code.replace(
+  `          <div key={a.id} onClick={() => abrirEditar(a)} style={{`,
+  `          <div key={a.id} onClick={() => abrirFicha(a)} style={{`
+)
+
+writeFileSync('src/components/Grupo.jsx', code)
+console.log('FichaAmigo conectado')
