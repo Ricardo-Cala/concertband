@@ -21,8 +21,17 @@ export default function FichaAmigo({ amigo, amigos, onCerrar, onEditar }) {
       .select('*, conciertos(id, artista, fecha, ciudad)')
       .eq('amigo_id', amigo.id)
       .eq('confirmado', true)
+
     setAsistencias(asis || [])
-    setConciertos((asis || []).map(a => a.conciertos).filter(Boolean))
+
+    // Deduplicar conciertos por id (por si hay filas repetidas en asistentes)
+    const mapaConciertos = new Map()
+    ;(asis || []).forEach(a => {
+      if (a.conciertos && a.conciertos.id && !mapaConciertos.has(a.conciertos.id)) {
+        mapaConciertos.set(a.conciertos.id, a.conciertos)
+      }
+    })
+    setConciertos(Array.from(mapaConciertos.values()))
   }
 
   const guardarGustos = async () => {
