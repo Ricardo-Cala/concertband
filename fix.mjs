@@ -1,51 +1,43 @@
 import { readFileSync, writeFileSync } from 'fs'
 
-// =========================================================
-// 1) ARREGLAR App.jsx — añadir conciertos={conciertos} a NuevoConcierto
-// =========================================================
-let appCode = readFileSync('src/App.jsx', 'utf8')
-
-const viejoApp = `      <NuevoConcierto
-        amigos={amigos}
-        onGuardado={() => { setMostrarNuevo(false); cargarConciertos() }}
-        onCancelar={() => setMostrarNuevo(false)}
-      />`
-
-const nuevoApp = `      <NuevoConcierto
-        amigos={amigos}
-        conciertos={conciertos}
-        onGuardado={() => { setMostrarNuevo(false); cargarConciertos() }}
-        onCancelar={() => setMostrarNuevo(false)}
-      />`
-
-if (appCode.includes(viejoApp)) {
-  appCode = appCode.replace(viejoApp, nuevoApp)
-  writeFileSync('src/App.jsx', appCode)
-  console.log('✅ App.jsx: ahora pasa conciertos={conciertos} a NuevoConcierto')
-} else if (appCode.includes('<NuevoConcierto') && appCode.includes('conciertos={conciertos}\n        onGuardado')) {
-  console.log('ℹ️ App.jsx ya tenía el cambio aplicado')
-} else {
-  console.log('⚠️ No se encontró el bloque exacto. Revísalo a mano.')
-}
-
-// =========================================================
-// 2) QUITAR logs de diagnóstico de NuevoConcierto.jsx
-// =========================================================
 let nc = readFileSync('src/components/NuevoConcierto.jsx', 'utf8')
 
-const bloqueLogs = `  const [foco, setFoco] = useState(null)
+// 1) Quitar el log de RENDER
+const viejoRender = `  const [foco, setFoco] = useState(null)
 
-  console.log('🔍 NuevoConcierto - props.conciertos:', conciertos)
-  console.log('🔍 NuevoConcierto - tipo:', typeof conciertos, 'esArray:', Array.isArray(conciertos), 'longitud:', conciertos?.length)`
+  console.log('🟢 RENDER NuevoConcierto | conciertos:', conciertos?.length, '| foco:', foco, '| artista escrito:', form.artista)`
 
-const sinLogs = `  const [foco, setFoco] = useState(null)`
+const nuevoRender = `  const [foco, setFoco] = useState(null)`
 
-if (nc.includes(bloqueLogs)) {
-  nc = nc.replace(bloqueLogs, sinLogs)
-  writeFileSync('src/components/NuevoConcierto.jsx', nc)
-  console.log('✅ NuevoConcierto.jsx: logs de diagnóstico eliminados')
-} else {
-  console.log('ℹ️ Los logs ya no estaban (o tenían otro formato)')
+if (nc.includes(viejoRender)) {
+  nc = nc.replace(viejoRender, nuevoRender)
+  console.log('✅ Log de RENDER eliminado')
 }
 
-console.log('\n🎸 Hecho. Recarga localhost:5173 y prueba escribir "arde" en el campo Artista')
+// 2) Restaurar el useMemo de sugerenciasArtista sin logs
+const viejoMemo = `  const sugerenciasArtista = useMemo(() => {
+    const q = normalizar(form.artista)
+    console.log('🔎 calculando sugerenciasArtista | q:', q, '| listaArtistas:', listaArtistas)
+    if (!q) return []
+    const result = listaArtistas
+      .filter(a => normalizar(a).includes(q) && normalizar(a) !== q)
+      .slice(0, 5)
+    console.log('🔎 resultado sugerenciasArtista:', result)
+    return result
+  }, [form.artista, listaArtistas])`
+
+const nuevoMemo = `  const sugerenciasArtista = useMemo(() => {
+    const q = normalizar(form.artista)
+    if (!q) return []
+    return listaArtistas
+      .filter(a => normalizar(a).includes(q) && normalizar(a) !== q)
+      .slice(0, 5)
+  }, [form.artista, listaArtistas])`
+
+if (nc.includes(viejoMemo)) {
+  nc = nc.replace(viejoMemo, nuevoMemo)
+  console.log('✅ Logs de sugerenciasArtista eliminados')
+}
+
+writeFileSync('src/components/NuevoConcierto.jsx', nc)
+console.log('\n🎸 Listo para publicar')

@@ -283,6 +283,7 @@ export default function App() {
     <div style={{ maxWidth: 390, margin: '0 auto', background: 'white', minHeight: '100vh' }}>
       <NuevoConcierto
         amigos={amigos}
+        conciertos={conciertos}
         onGuardado={() => { setMostrarNuevo(false); cargarConciertos() }}
         onCancelar={() => setMostrarNuevo(false)}
       />
