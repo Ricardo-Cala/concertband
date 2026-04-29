@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import { supabase } from '../supabase'
 
 const normalizar = (txt) => (txt || '')
@@ -16,11 +16,10 @@ export default function NuevoConcierto({ amigos, conciertos = [], onGuardado, on
     hotel_nombre: '', hotel_responsable: ''
   })
   const [guardando, setGuardando] = useState(false)
-  const [foco, setFoco] = useState(null) // 'artista' | 'ciudad' | null
+  const [foco, setFoco] = useState(null)
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
-  // Listas únicas (por valor normalizado, conservando la grafía original)
   const listaArtistas = useMemo(() => {
     const map = {}
     ;(conciertos || []).forEach(c => {
@@ -63,8 +62,6 @@ export default function NuevoConcierto({ amigos, conciertos = [], onGuardado, on
       return
     }
 
-    // Auto-corrección final: si lo que escribió el usuario coincide
-    // (normalizado) con uno ya existente, usar la grafía existente.
     const artistaFinal = listaArtistas.find(a => normalizar(a) === normalizar(form.artista)) || form.artista.trim()
     const ciudadFinal  = listaCiudades.find(c => normalizar(c) === normalizar(form.ciudad))  || form.ciudad.trim()
 
@@ -106,7 +103,6 @@ export default function NuevoConcierto({ amigos, conciertos = [], onGuardado, on
     boxSizing: 'border-box'
   }
 
-  // Campo con autocompletado (artista y ciudad)
   const campoAutocompletar = (label, key, placeholder, sugerencias) => (
     <div style={{ marginBottom: 12, position: 'relative' }}>
       <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 4 }}>{label}</label>
@@ -145,8 +141,6 @@ export default function NuevoConcierto({ amigos, conciertos = [], onGuardado, on
                 borderBottom: i < sugerencias.length - 1 ? '1px solid #f0f0f5' : 'none',
                 background: 'white'
               }}
-              onMouseEnter={e => e.currentTarget.style.background = '#f0f0f5'}
-              onMouseLeave={e => e.currentTarget.style.background = 'white'}
             >
               {s}
             </div>
