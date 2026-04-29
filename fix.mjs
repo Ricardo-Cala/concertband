@@ -1,85 +1,274 @@
 import { readFileSync, writeFileSync } from 'fs'
 
-const ruta = 'src/components/EstadisticasGrupo.jsx'
-let code = readFileSync(ruta, 'utf8')
+// =========================================================
+// 1) REESCRITURA COMPLETA DE NuevoConcierto.jsx
+// =========================================================
+const nuevoConciertoCode = `import { useState, useMemo, useRef, useEffect } from 'react'
+import { supabase } from '../supabase'
 
-// 1) Insertar la función normalizar justo después de la apertura del useMemo
-const viejoInicio = `  const stats = useMemo(() => {
-    const hoy = new Date()`
+const normalizar = (txt) => (txt || '')
+  .toString()
+  .normalize('NFD')
+  .replace(/[\\u0300-\\u036f]/g, '')
+  .toLowerCase()
+  .trim()
 
-const nuevoInicio = `  const stats = useMemo(() => {
-    const normalizar = (txt) => (txt || '')
-      .toString()
-      .normalize('NFD')
-      .replace(/[\\u0300-\\u036f]/g, '')
-      .toLowerCase()
-      .trim()
+export default function NuevoConcierto({ amigos, conciertos = [], onGuardado, onCancelar }) {
+  const [form, setForm] = useState({
+    artista: '', fecha: '', recinto: '', ciudad: '',
+    hora_apertura: '', estado: 'pendiente',
+    transporte_tipo: '', transporte_responsable: '',
+    hotel_nombre: '', hotel_responsable: ''
+  })
+  const [guardando, setGuardando] = useState(false)
+  const [foco, setFoco] = useState(null) // 'artista' | 'ciudad' | null
 
-    const hoy = new Date()`
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
-code = code.replace(viejoInicio, nuevoInicio)
-
-// 2) Total de ciudades únicas (normalizado)
-const viejoTotalCiudades = `    const ciudadesUnicas = new Set(conciertosPasados.map(c => c.ciudad).filter(Boolean))
-    const totalCiudades = ciudadesUnicas.size`
-
-const nuevoTotalCiudades = `    const ciudadesUnicas = new Set(
-      conciertosPasados.map(c => normalizar(c.ciudad)).filter(Boolean)
-    )
-    const totalCiudades = ciudadesUnicas.size`
-
-code = code.replace(viejoTotalCiudades, nuevoTotalCiudades)
-
-// 3) Top ciudades (agrupar por clave normalizada, mostrar nombre original)
-const viejoTopCiudades = `    // Top ciudades
-    const ciudadesCount = {}
-    conciertosPasados.forEach(c => {
-      if (c.ciudad) ciudadesCount[c.ciudad] = (ciudadesCount[c.ciudad] || 0) + 1
-    })
-    const topCiudades = Object.entries(ciudadesCount)
-      .map(([ciudad, cant]) => ({ ciudad, cantidad: cant }))
-      .sort((a, b) => b.cantidad - a.cantidad)
-      .slice(0, 8)`
-
-const nuevoTopCiudades = `    // Top ciudades (insensible a mayusculas/acentos)
-    const ciudadesMap = {}
-    conciertosPasados.forEach(c => {
-      if (!c.ciudad) return
-      const clave = normalizar(c.ciudad)
-      if (!ciudadesMap[clave]) {
-        ciudadesMap[clave] = { nombre: c.ciudad.trim(), cantidad: 0 }
-      }
-      ciudadesMap[clave].cantidad++
-    })
-    const topCiudades = Object.values(ciudadesMap)
-      .map(({ nombre, cantidad }) => ({ ciudad: nombre, cantidad }))
-      .sort((a, b) => b.cantidad - a.cantidad)
-      .slice(0, 8)`
-
-code = code.replace(viejoTopCiudades, nuevoTopCiudades)
-
-// 4) Artista top (agrupar por clave normalizada)
-const viejoArtistaTop = `    // Artista top
-    const artistasCount = {}
-    conciertosPasados.forEach(c => {
-      if (c.artista) artistasCount[c.artista] = (artistasCount[c.artista] || 0) + 1
-    })
-    const artistaTop = Object.entries(artistasCount).sort((a, b) => b[1] - a[1])[0]`
-
-const nuevoArtistaTop = `    // Artista top (insensible a mayusculas/acentos)
-    const artistasMap = {}
-    conciertosPasados.forEach(c => {
+  // Listas únicas (por valor normalizado, conservando la grafía original)
+  const listaArtistas = useMemo(() => {
+    const map = {}
+    ;(conciertos || []).forEach(c => {
       if (!c.artista) return
       const clave = normalizar(c.artista)
-      if (!artistasMap[clave]) {
-        artistasMap[clave] = { nombre: c.artista.trim(), cantidad: 0 }
-      }
-      artistasMap[clave].cantidad++
+      if (!map[clave]) map[clave] = c.artista.trim()
     })
-    const artistaTopObj = Object.values(artistasMap).sort((a, b) => b.cantidad - a.cantidad)[0]
-    const artistaTop = artistaTopObj ? [artistaTopObj.nombre, artistaTopObj.cantidad] : undefined`
+    return Object.values(map).sort((a, b) => a.localeCompare(b, 'es'))
+  }, [conciertos])
 
-code = code.replace(viejoArtistaTop, nuevoArtistaTop)
+  const listaCiudades = useMemo(() => {
+    const map = {}
+    ;(conciertos || []).forEach(c => {
+      if (!c.ciudad) return
+      const clave = normalizar(c.ciudad)
+      if (!map[clave]) map[clave] = c.ciudad.trim()
+    })
+    return Object.values(map).sort((a, b) => a.localeCompare(b, 'es'))
+  }, [conciertos])
 
-writeFileSync(ruta, code)
-console.log('Hecho ✅ Estadísticas ahora ignoran mayúsculas y acentos')
+  const sugerenciasArtista = useMemo(() => {
+    const q = normalizar(form.artista)
+    if (!q) return []
+    return listaArtistas
+      .filter(a => normalizar(a).includes(q) && normalizar(a) !== q)
+      .slice(0, 5)
+  }, [form.artista, listaArtistas])
+
+  const sugerenciasCiudad = useMemo(() => {
+    const q = normalizar(form.ciudad)
+    if (!q) return []
+    return listaCiudades
+      .filter(c => normalizar(c).includes(q) && normalizar(c) !== q)
+      .slice(0, 5)
+  }, [form.ciudad, listaCiudades])
+
+  const guardar = async () => {
+    if (!form.artista || !form.fecha || !form.recinto || !form.ciudad) {
+      alert('Rellena al menos: artista, fecha, recinto y ciudad')
+      return
+    }
+
+    // Auto-corrección final: si lo que escribió el usuario coincide
+    // (normalizado) con uno ya existente, usar la grafía existente.
+    const artistaFinal = listaArtistas.find(a => normalizar(a) === normalizar(form.artista)) || form.artista.trim()
+    const ciudadFinal  = listaCiudades.find(c => normalizar(c) === normalizar(form.ciudad))  || form.ciudad.trim()
+
+    setGuardando(true)
+    const { data: concierto, error } = await supabase
+      .from('conciertos').insert([{
+        artista: artistaFinal, fecha: form.fecha,
+        recinto: form.recinto, ciudad: ciudadFinal,
+        hora_apertura: form.hora_apertura, estado: form.estado
+      }]).select().single()
+
+    if (error) { alert('Error al guardar: ' + error.message); setGuardando(false); return }
+
+    if (form.transporte_tipo) {
+      await supabase.from('transportes').insert([{
+        concierto_id: concierto.id,
+        tipo: form.transporte_tipo,
+        responsable_id: form.transporte_responsable || null,
+        confirmado: false
+      }])
+    }
+
+    if (form.hotel_nombre) {
+      await supabase.from('hoteles').insert([{
+        concierto_id: concierto.id,
+        nombre: form.hotel_nombre,
+        responsable_id: form.hotel_responsable || null,
+        reservado: false
+      }])
+    }
+
+    setGuardando(false)
+    onGuardado()
+  }
+
+  const inputStyle = {
+    width: '100%', padding: '8px 10px', borderRadius: 8,
+    border: '1px solid #ddd', fontSize: 14, background: 'white',
+    boxSizing: 'border-box'
+  }
+
+  // Campo con autocompletado (artista y ciudad)
+  const campoAutocompletar = (label, key, placeholder, sugerencias) => (
+    <div style={{ marginBottom: 12, position: 'relative' }}>
+      <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 4 }}>{label}</label>
+      <input
+        type='text'
+        value={form[key]}
+        placeholder={placeholder}
+        onChange={e => set(key, e.target.value)}
+        onFocus={() => setFoco(key)}
+        onBlur={() => setTimeout(() => setFoco(f => f === key ? null : f), 150)}
+        autoComplete='off'
+        style={inputStyle}
+      />
+      {foco === key && sugerencias.length > 0 && (
+        <div style={{
+          position: 'absolute',
+          top: '100%',
+          left: 0,
+          right: 0,
+          background: 'white',
+          border: '1px solid #ddd',
+          borderRadius: 8,
+          marginTop: 4,
+          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+          zIndex: 100,
+          overflow: 'hidden'
+        }}>
+          {sugerencias.map((s, i) => (
+            <div
+              key={s}
+              onMouseDown={(e) => { e.preventDefault(); set(key, s); setFoco(null) }}
+              style={{
+                padding: '10px 12px',
+                fontSize: 14,
+                cursor: 'pointer',
+                borderBottom: i < sugerencias.length - 1 ? '1px solid #f0f0f5' : 'none',
+                background: 'white'
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = '#f0f0f5'}
+              onMouseLeave={e => e.currentTarget.style.background = 'white'}
+            >
+              {s}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+
+  const campo = (label, key, tipo = 'text', placeholder = '') => (
+    <div style={{ marginBottom: 12 }}>
+      <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 4 }}>{label}</label>
+      <input type={tipo} value={form[key]} placeholder={placeholder}
+        onChange={e => set(key, e.target.value)}
+        style={inputStyle} />
+    </div>
+  )
+
+  const select = (label, key) => (
+    <div style={{ marginBottom: 12 }}>
+      <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 4 }}>{label}</label>
+      <select value={form[key]} onChange={e => set(key, e.target.value)}
+        style={inputStyle}>
+        <option value=''>— Sin asignar —</option>
+        {amigos.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+      </select>
+    </div>
+  )
+
+  return (
+    <div style={{ padding: 16 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <h2 style={{ fontSize: 16, fontWeight: 500 }}>Nuevo concierto</h2>
+        <button onClick={onCancelar} style={{ background: 'none', border: 'none', fontSize: 20, color: '#888' }}>✕</button>
+      </div>
+
+      <div style={{ background: 'white', borderRadius: 12, padding: 16, marginBottom: 12 }}>
+        <div style={{ fontSize: 12, fontWeight: 500, color: '#7F77DD', marginBottom: 12 }}>CONCIERTO</div>
+        {campoAutocompletar('Artista *', 'artista', 'Ej: Metallica', sugerenciasArtista)}
+        {campo('Fecha *', 'fecha', 'date')}
+        {campo('Recinto *', 'recinto', 'text', 'Ej: Palau Sant Jordi')}
+        {campoAutocompletar('Ciudad *', 'ciudad', 'Ej: Barcelona', sugerenciasCiudad)}
+        {campo('Hora apertura', 'hora_apertura', 'time')}
+        <div style={{ marginBottom: 12 }}>
+          <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 4 }}>Estado</label>
+          <select value={form.estado} onChange={e => set('estado', e.target.value)}
+            style={inputStyle}>
+            <option value='pendiente'>Pendiente</option>
+            <option value='confirmado'>Confirmado</option>
+          </select>
+        </div>
+      </div>
+
+      <div style={{ background: 'white', borderRadius: 12, padding: 16, marginBottom: 12 }}>
+        <div style={{ fontSize: 12, fontWeight: 500, color: '#7F77DD', marginBottom: 12 }}>TRANSPORTE</div>
+        <div style={{ marginBottom: 12 }}>
+          <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 4 }}>Tipo</label>
+          <select value={form.transporte_tipo} onChange={e => set('transporte_tipo', e.target.value)}
+            style={inputStyle}>
+            <option value=''>— Sin definir —</option>
+            <option value='Coche'>Coche</option>
+            <option value='Tren'>Tren</option>
+            <option value='AVE'>AVE</option>
+            <option value='Avión'>Avión</option>
+            <option value='Autobús'>Autobús</option>
+          </select>
+        </div>
+        {select('Responsable de gestionar el transporte', 'transporte_responsable')}
+      </div>
+
+      <div style={{ background: 'white', borderRadius: 12, padding: 16, marginBottom: 20 }}>
+        <div style={{ fontSize: 12, fontWeight: 500, color: '#7F77DD', marginBottom: 12 }}>HOTEL</div>
+        {campo('Nombre del hotel', 'hotel_nombre', 'text', 'Ej: NH Madrid Atocha')}
+        {select('Responsable de la reserva', 'hotel_responsable')}
+      </div>
+
+      <button onClick={guardar} disabled={guardando} style={{
+        width: '100%', padding: '12px', borderRadius: 10,
+        background: '#7F77DD', color: 'white', border: 'none',
+        fontSize: 15, fontWeight: 500
+      }}>
+        {guardando ? 'Guardando...' : 'Guardar concierto'}
+      </button>
+    </div>
+  )
+}
+`
+
+writeFileSync('src/components/NuevoConcierto.jsx', nuevoConciertoCode)
+console.log('✅ NuevoConcierto.jsx reescrito con autocompletado')
+
+// =========================================================
+// 2) PARCHE A App.jsx: pasar conciertos al formulario
+// =========================================================
+let appCode = readFileSync('src/App.jsx', 'utf8')
+
+const viejoApp = `      <NuevoConcierto
+        amigos={amigos}
+        onGuardado={() => { setMostrarNuevo(false); cargarConciertos() }}
+        onCancelar={() => setMostrarNuevo(false)}
+      />`
+
+const nuevoApp = `      <NuevoConcierto
+        amigos={amigos}
+        conciertos={conciertos}
+        onGuardado={() => { setMostrarNuevo(false); cargarConciertos() }}
+        onCancelar={() => setMostrarNuevo(false)}
+      />`
+
+if (appCode.includes(viejoApp)) {
+  appCode = appCode.replace(viejoApp, nuevoApp)
+  writeFileSync('src/App.jsx', appCode)
+  console.log('✅ App.jsx actualizado: pasa conciertos al formulario')
+} else if (appCode.includes('conciertos={conciertos}')) {
+  console.log('ℹ️ App.jsx ya pasaba conciertos, no hay nada que cambiar')
+} else {
+  console.log('⚠️ No se encontró el bloque exacto en App.jsx — revísalo manualmente')
+}
+
+console.log('\n🎸 Hecho. Ejecuta el dev server y prueba.')
