@@ -18,6 +18,7 @@ export default function App() {
   const [conciertoEditando, setConciertoEditando] = useState(null)
   const [mostrarNuevo, setMostrarNuevo] = useState(false)
   const [verEstadisticas, setVerEstadisticas] = useState(false)
+  const [cargando, setCargando] = useState(true)
 
   useEffect(() => {
     supabase.from('amigos').select('*').then(({ data }) => data && setAmigos(data))
@@ -74,6 +75,8 @@ export default function App() {
   const cargarConciertos = async () => {
     const { data } = await supabase.from('conciertos').select(`*, transportes(*), hoteles(*)`).order('fecha')
     if (data) setConciertos(data)
+  
+    setCargando(false)
   }
 
   const hoy = new Date(new Date().toDateString())
@@ -93,6 +96,31 @@ export default function App() {
     if (tipo === 'AVE') return '🚄'
     return '🚆'
   }
+  // SKELETON CARDS para estados de carga
+  const SkeletonCard = () => (
+    <div className='skeleton-card'>
+      <div className='skeleton' style={{ height: 14, width: '60%', marginBottom: 8 }} />
+      <div className='skeleton' style={{ height: 11, width: '85%', marginBottom: 10 }} />
+      <div style={{ display: 'flex', gap: 6 }}>
+        <div className='skeleton' style={{ height: 18, width: 70, borderRadius: 20 }} />
+        <div className='skeleton' style={{ height: 18, width: 50, borderRadius: 20 }} />
+      </div>
+    </div>
+  )
+
+  const SkeletonProximo = () => (
+    <div style={{ background: '#1a1a2e', borderRadius: 14, padding: 16, marginBottom: 16, boxShadow: '0 4px 16px rgba(26,26,46,0.25)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 14 }}>
+        <div className='skeleton' style={{ height: 50, width: 56, background: 'linear-gradient(90deg, #2a2a3e 0%, #3a3a52 50%, #2a2a3e 100%)', backgroundSize: '800px 100%' }} />
+        <div style={{ flex: 1, borderLeft: '1px solid rgba(255,255,255,0.15)', paddingLeft: 16 }}>
+          <div className='skeleton' style={{ height: 11, width: '50%', marginBottom: 6, background: 'linear-gradient(90deg, #2a2a3e 0%, #3a3a52 50%, #2a2a3e 100%)', backgroundSize: '800px 100%' }} />
+          <div className='skeleton' style={{ height: 14, width: '70%', marginBottom: 4, background: 'linear-gradient(90deg, #2a2a3e 0%, #3a3a52 50%, #2a2a3e 100%)', backgroundSize: '800px 100%' }} />
+          <div className='skeleton' style={{ height: 10, width: '55%', background: 'linear-gradient(90deg, #2a2a3e 0%, #3a3a52 50%, #2a2a3e 100%)', backgroundSize: '800px 100%' }} />
+        </div>
+      </div>
+    </div>
+  )
+
 
   // TARJETA MEJORADA: sin borde izquierdo, con sombra suave
   const TarjetaConcierto = ({ c, opacidad = 1 }) => (
@@ -182,7 +210,8 @@ export default function App() {
           </div>
         </div>
 
-        {siguiente && (
+        {cargando && <SkeletonProximo />}
+        {!cargando && siguiente && (
           <div className='fade-in-up card-tap' style={{ background: '#1a1a2e', borderRadius: 14, padding: 16, marginBottom: 16, cursor: 'pointer', boxShadow: '0 4px 16px rgba(26,26,46,0.25)' }}
             onClick={() => setConciertoSeleccionado(siguiente)}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 14 }}>
@@ -226,7 +255,10 @@ export default function App() {
             <span style={{ color: '#7F77DD', cursor: 'pointer' }} onClick={() => setMostrarNuevo(true)}>Añade el primero</span>
           </div>
         )}
-        {proximos.slice(0, 3).map(c => <TarjetaConcierto key={c.id} c={c} />)}
+        {cargando
+          ? Array.from({ length: 3 }).map((_, i) => <SkeletonCard key={i} />)
+          : proximos.slice(0, 3).map(c => <TarjetaConcierto key={c.id} c={c} />)
+        }
       </div>
     )
   }
@@ -237,7 +269,13 @@ export default function App() {
         <div style={{ fontSize: 13, fontWeight: 500, color: '#888' }}>CONCIERTOS</div>
         <button onClick={() => setMostrarNuevo(true)} className='btn-tap' style={{ background: '#7F77DD', color: 'white', border: 'none', borderRadius: 20, padding: '6px 14px', fontSize: 12, fontWeight: 500, cursor: 'pointer' }}>+ Nuevo</button>
       </div>
-      {proximos.length > 0 && (
+      {cargando && (
+        <>
+          <div style={{ fontSize: 11, color: '#7F77DD', fontWeight: 500, marginBottom: 8 }}>PRÓXIMOS</div>
+          {Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}
+        </>
+      )}
+      {!cargando && proximos.length > 0 && (
         <>
           <div style={{ fontSize: 11, color: '#7F77DD', fontWeight: 500, marginBottom: 8 }}>PRÓXIMOS</div>
           {proximos.map(c => <TarjetaConcierto key={c.id} c={c} />)}
