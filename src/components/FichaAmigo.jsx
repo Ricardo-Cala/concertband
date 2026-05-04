@@ -144,17 +144,26 @@ export default function FichaAmigo({ amigo, amigos, onCerrar, onEditar }) {
         )}
 
         {/* HISTORIAL */}
-        {conciertos.length > 0 && (
-          <div style={{ background: 'white', borderRadius: 12, padding: 14, marginBottom: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-            <div style={{ fontSize: 11, fontWeight: 500, color: '#888', marginBottom: 10 }}>HISTORIAL</div>
-            {conciertos.sort((a, b) => new Date(b.fecha) - new Date(a.fecha)).map(c => (
-              <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '0.5px solid #f0f0f0' }}>
-                <span style={{ fontSize: 13, fontWeight: 500 }}>{c.artista}</span>
-                <span style={{ fontSize: 12, color: '#888' }}>{new Date(c.fecha).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
-              </div>
-            ))}
-          </div>
-        )}
+        {conciertos.length > 0 && (() => {
+          const hoy = new Date()
+          hoy.setHours(0, 0, 0, 0)
+          return (
+            <div style={{ background: 'white', borderRadius: 12, padding: 14, marginBottom: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+              <div style={{ fontSize: 11, fontWeight: 500, color: '#888', marginBottom: 10 }}>HISTORIAL</div>
+              {conciertos.sort((a, b) => new Date(b.fecha) - new Date(a.fecha)).map(c => {
+                const fechaConcierto = new Date(c.fecha)
+                fechaConcierto.setHours(0, 0, 0, 0)
+                const pasado = fechaConcierto < hoy
+                return (
+                  <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '0.5px solid #f0f0f0' }}>
+                    <span style={{ fontSize: 13, fontWeight: 500, color: pasado ? '#aaa' : '#333' }}>{c.artista}</span>
+                    <span style={{ fontSize: 12, color: pasado ? '#bbb' : '#888' }}>{new Date(c.fecha).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                  </div>
+                )
+              })}
+            </div>
+          )
+        })()}
 
         {/* GUSTOS MUSICALES */}
         <div style={{ background: 'white', borderRadius: 12, padding: 14, marginBottom: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
