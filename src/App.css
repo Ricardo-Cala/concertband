@@ -44,3 +44,34 @@
     animation: none;
   }
 }
+
+/* === FEEDBACK TÁCTIL EN BOTONES Y ELEMENTOS CLICABLES === */
+
+.btn-tap {
+  transition: transform 0.1s ease-out, opacity 0.1s ease-out, box-shadow 0.15s ease-out;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.btn-tap:active {
+  transform: scale(0.96);
+  opacity: 0.85;
+}
+
+/* Variante para tarjetas (efecto más sutil) */
+.card-tap {
+  transition: transform 0.12s ease-out, box-shadow 0.15s ease-out;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.card-tap:active {
+  transform: scale(0.98);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-tap:active,
+  .card-tap:active {
+    transform: none;
+  }
+}

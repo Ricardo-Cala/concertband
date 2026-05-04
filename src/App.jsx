@@ -96,7 +96,7 @@ export default function App() {
 
   // TARJETA MEJORADA: sin borde izquierdo, con sombra suave
   const TarjetaConcierto = ({ c, opacidad = 1 }) => (
-    <div className='fade-in-up' onClick={() => setConciertoSeleccionado(c)} style={{
+    <div className='fade-in-up card-tap' onClick={() => setConciertoSeleccionado(c)} style={{
       background: 'white',
       borderRadius: 14,
       padding: 14,
@@ -183,7 +183,7 @@ export default function App() {
         </div>
 
         {siguiente && (
-          <div className='fade-in-up' style={{ background: '#1a1a2e', borderRadius: 14, padding: 16, marginBottom: 16, cursor: 'pointer', boxShadow: '0 4px 16px rgba(26,26,46,0.25)' }}
+          <div className='fade-in-up card-tap' style={{ background: '#1a1a2e', borderRadius: 14, padding: 16, marginBottom: 16, cursor: 'pointer', boxShadow: '0 4px 16px rgba(26,26,46,0.25)' }}
             onClick={() => setConciertoSeleccionado(siguiente)}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 14 }}>
               <div style={{ textAlign: 'center', flexShrink: 0 }}>
@@ -235,7 +235,7 @@ export default function App() {
     <div style={{ padding: 16 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
         <div style={{ fontSize: 13, fontWeight: 500, color: '#888' }}>CONCIERTOS</div>
-        <button onClick={() => setMostrarNuevo(true)} style={{ background: '#7F77DD', color: 'white', border: 'none', borderRadius: 20, padding: '6px 14px', fontSize: 12, fontWeight: 500, cursor: 'pointer' }}>+ Nuevo</button>
+        <button onClick={() => setMostrarNuevo(true)} className='btn-tap' style={{ background: '#7F77DD', color: 'white', border: 'none', borderRadius: 20, padding: '6px 14px', fontSize: 12, fontWeight: 500, cursor: 'pointer' }}>+ Nuevo</button>
       </div>
       {proximos.length > 0 && (
         <>
@@ -330,7 +330,7 @@ export default function App() {
         {tabs.map(({ id, label, Icon }) => {
           const activo = pantalla === id
           return (
-            <button key={id} onClick={() => setPantalla(id)} style={{
+            <button key={id} onClick={() => setPantalla(id)} className='btn-tap' style={{
               flex: 1,
               padding: '10px 4px',
               fontSize: 10,
@@ -356,7 +356,7 @@ export default function App() {
       {pantallas[pantalla]}
 
       {pantalla === 'conciertos' && (
-        <button onClick={() => setMostrarNuevo(true)} style={{
+        <button onClick={() => setMostrarNuevo(true)} className='btn-tap' style={{
           position: 'fixed', bottom: 24, right: 24,
           width: 48, height: 48, borderRadius: '50%',
           background: '#7F77DD', color: 'white', border: 'none',
