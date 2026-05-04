@@ -96,7 +96,7 @@ export default function App() {
 
   // TARJETA MEJORADA: sin borde izquierdo, con sombra suave
   const TarjetaConcierto = ({ c, opacidad = 1 }) => (
-    <div onClick={() => setConciertoSeleccionado(c)} style={{
+    <div className='fade-in-up' onClick={() => setConciertoSeleccionado(c)} style={{
       background: 'white',
       borderRadius: 14,
       padding: 14,
@@ -183,7 +183,7 @@ export default function App() {
         </div>
 
         {siguiente && (
-          <div style={{ background: '#1a1a2e', borderRadius: 14, padding: 16, marginBottom: 16, cursor: 'pointer', boxShadow: '0 4px 16px rgba(26,26,46,0.25)' }}
+          <div className='fade-in-up' style={{ background: '#1a1a2e', borderRadius: 14, padding: 16, marginBottom: 16, cursor: 'pointer', boxShadow: '0 4px 16px rgba(26,26,46,0.25)' }}
             onClick={() => setConciertoSeleccionado(siguiente)}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 14 }}>
               <div style={{ textAlign: 'center', flexShrink: 0 }}>
