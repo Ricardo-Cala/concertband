@@ -102,3 +102,16 @@
 @media (prefers-reduced-motion: reduce) {
   .skeleton { animation: none; }
 }
+
+/* === SPINNER PULL TO REFRESH === */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.spin {
+  animation: spin 0.8s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spin { animation: none; }
+}

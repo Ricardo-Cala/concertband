@@ -3,125 +3,140 @@ import { readFileSync, writeFileSync } from 'fs'
 let code = readFileSync('src/App.jsx', 'utf8')
 let cambios = 0
 
-// 2.1) Añadir estado 'cargando' después de 'verEstadisticas'
-if (!code.includes('const [cargando')) {
-  const regexEstado = /(const \[verEstadisticas, setVerEstadisticas\] = useState\(false\))/
+// 1) Añadir CSS de la animación de spin a App.css
+let css = readFileSync('src/App.css', 'utf8')
+const cssSpin = `
+/* === SPINNER PULL TO REFRESH === */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.spin {
+  animation: spin 0.8s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spin { animation: none; }
+}
+`
+if (!css.includes('=== SPINNER PULL TO REFRESH')) {
+  css += cssSpin
+  writeFileSync('src/App.css', css)
+  console.log('✅ CSS de spinner añadido')
+} else {
+  console.log('ℹ️  CSS de spinner ya existía')
+}
+
+// 2) Añadir estados pullDistance y refrescando
+if (!code.includes('const [pullDistance')) {
+  const regexEstado = /(const \[cargando, setCargando\] = useState\(true\))/
   if (regexEstado.test(code)) {
-    code = code.replace(regexEstado, `$1\n  const [cargando, setCargando] = useState(true)`)
+    code = code.replace(regexEstado, `$1\n  const [pullDistance, setPullDistance] = useState(0)\n  const [refrescando, setRefrescando] = useState(false)`)
     cambios++
-    console.log('✅ Estado "cargando" añadido')
+    console.log('✅ Estados pullDistance y refrescando añadidos')
   } else {
-    console.error('❌ No se encontró verEstadisticas. Aborto.')
+    console.error('❌ No se encontró estado cargando. Aborto.')
     process.exit(1)
   }
 } else {
-  console.log('ℹ️  Estado "cargando" ya existía')
+  console.log('ℹ️  Estados ya existían')
 }
 
-// 2.2) Modificar cargarConciertos
-if (!code.includes('setCargando(false)')) {
-  const regexCargar = /(const cargarConciertos = async \(\) => \{[\s\S]*?if \(data\) setConciertos\(data\)\s*)\}/
-  if (regexCargar.test(code)) {
-    code = code.replace(regexCargar, `$1\n    setCargando(false)\n  }`)
-    cambios++
-    console.log('✅ cargarConciertos actualizado')
-  } else {
-    console.error('❌ No se encontró cargarConciertos. Aborto.')
-    process.exit(1)
-  }
-} else {
-  console.log('ℹ️  cargarConciertos ya tenía setCargando')
-}
+// 3) Reemplazar el useEffect del pull-to-refresh con uno que actualice los estados
+const regexPullViejo = /  useEffect\(\(\) => \{\s*let startY = 0\s*let pulling = false\s*\n[\s\S]*?return \(\) => \{\s*document\.removeEventListener\('touchstart', onTouchStart\)\s*document\.removeEventListener\('touchend', onTouchEnd\)\s*\}\s*\}, \[\]\)/
 
-// 2.3) Añadir componentes Skeleton antes de TarjetaConcierto
-if (!code.includes('SkeletonCard')) {
-  const regexMarcador = /(\s*\/\/ TARJETA MEJORADA)/
-  const skeletonComponente = `
-  // SKELETON CARDS para estados de carga
-  const SkeletonCard = () => (
-    <div className='skeleton-card'>
-      <div className='skeleton' style={{ height: 14, width: '60%', marginBottom: 8 }} />
-      <div className='skeleton' style={{ height: 11, width: '85%', marginBottom: 10 }} />
-      <div style={{ display: 'flex', gap: 6 }}>
-        <div className='skeleton' style={{ height: 18, width: 70, borderRadius: 20 }} />
-        <div className='skeleton' style={{ height: 18, width: 50, borderRadius: 20 }} />
-      </div>
-    </div>
-  )
+const pullNuevo = `  useEffect(() => {
+    let startY = 0
+    let pulling = false
+    let currentDistance = 0
 
-  const SkeletonProximo = () => (
-    <div style={{ background: '#1a1a2e', borderRadius: 14, padding: 16, marginBottom: 16, boxShadow: '0 4px 16px rgba(26,26,46,0.25)' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 14 }}>
-        <div className='skeleton' style={{ height: 50, width: 56, background: 'linear-gradient(90deg, #2a2a3e 0%, #3a3a52 50%, #2a2a3e 100%)', backgroundSize: '800px 100%' }} />
-        <div style={{ flex: 1, borderLeft: '1px solid rgba(255,255,255,0.15)', paddingLeft: 16 }}>
-          <div className='skeleton' style={{ height: 11, width: '50%', marginBottom: 6, background: 'linear-gradient(90deg, #2a2a3e 0%, #3a3a52 50%, #2a2a3e 100%)', backgroundSize: '800px 100%' }} />
-          <div className='skeleton' style={{ height: 14, width: '70%', marginBottom: 4, background: 'linear-gradient(90deg, #2a2a3e 0%, #3a3a52 50%, #2a2a3e 100%)', backgroundSize: '800px 100%' }} />
-          <div className='skeleton' style={{ height: 10, width: '55%', background: 'linear-gradient(90deg, #2a2a3e 0%, #3a3a52 50%, #2a2a3e 100%)', backgroundSize: '800px 100%' }} />
-        </div>
-      </div>
-    </div>
-  )
-$1`
-  if (regexMarcador.test(code)) {
-    code = code.replace(regexMarcador, skeletonComponente)
-    cambios++
-    console.log('✅ Componentes Skeleton añadidos')
-  } else {
-    console.error('❌ No se encontró el marcador "// TARJETA MEJORADA". Aborto.')
-    process.exit(1)
-  }
-} else {
-  console.log('ℹ️  Skeletons ya existían')
-}
+    const onTouchStart = (e) => {
+      startY = e.touches[0].clientY
+      pulling = window.scrollY === 0
+    }
 
-// 2.4) Reemplazar próximos en PantallaInicio
-const regexInicio = /\{proximos\.slice\(0, 3\)\.map\(c => <TarjetaConcierto key=\{c\.id\} c=\{c\} \/>\)\}/
-if (regexInicio.test(code) && !code.includes('cargando\n          ? Array.from')) {
-  code = code.replace(regexInicio, `{cargando
-          ? Array.from({ length: 3 }).map((_, i) => <SkeletonCard key={i} />)
-          : proximos.slice(0, 3).map(c => <TarjetaConcierto key={c.id} c={c} />)
-        }`)
+    const onTouchMove = (e) => {
+      if (!pulling) return
+      const diff = e.touches[0].clientY - startY
+      if (diff > 0 && diff < 150) {
+        currentDistance = diff
+        setPullDistance(diff)
+      }
+    }
+
+    const onTouchEnd = async (e) => {
+      if (!pulling) return
+      const diff = e.changedTouches[0].clientY - startY
+      setPullDistance(0)
+      if (diff > 80) {
+        setRefrescando(true)
+        await cargarConciertos()
+        await supabase.from('amigos').select('*').then(({ data }) => data && setAmigos(data))
+        await supabase.from('asistentes').select('*').then(({ data }) => data && setAsistentes(data))
+        await supabase.from('gastos').select('*').then(({ data }) => data && setGastos(data))
+        setRefrescando(false)
+      }
+      pulling = false
+      currentDistance = 0
+    }
+
+    document.addEventListener('touchstart', onTouchStart, { passive: true })
+    document.addEventListener('touchmove', onTouchMove, { passive: true })
+    document.addEventListener('touchend', onTouchEnd, { passive: true })
+    return () => {
+      document.removeEventListener('touchstart', onTouchStart)
+      document.removeEventListener('touchmove', onTouchMove)
+      document.removeEventListener('touchend', onTouchEnd)
+    }
+  }, [])`
+
+if (regexPullViejo.test(code)) {
+  code = code.replace(regexPullViejo, pullNuevo)
   cambios++
-  console.log('✅ PantallaInicio: skeletons en próximos conciertos')
+  console.log('✅ useEffect de pull-to-refresh actualizado')
+} else if (code.includes('onTouchMove')) {
+  console.log('ℹ️  Pull-to-refresh ya tiene onTouchMove')
 } else {
-  console.log('ℹ️  Skeleton de próximos ya aplicado')
+  console.error('❌ No se encontró el useEffect de pull-to-refresh. Aborto.')
+  process.exit(1)
 }
 
-// 2.5) Añadir SkeletonProximo antes de la tarjeta oscura
-if (!code.includes('cargando && <SkeletonProximo')) {
-  const regexProximo = /(\{siguiente && \()/
-  if (regexProximo.test(code)) {
-    code = code.replace(regexProximo, `{cargando && <SkeletonProximo />}\n        {!cargando && siguiente && (`)
-    // Quitar el {siguiente && ( original que quedaría duplicado al final
-    code = code.replace(/\{!cargando && siguiente && \(\s*\{siguiente && \(/, `{!cargando && siguiente && (`)
+// 4) Añadir el indicador visual antes del Header
+const regexIndicador = /(    <div style=\{\{ maxWidth: 390, margin: '0 auto', background: '#f0f0f5', minHeight: '100vh' \}\}>\s*)<Header/
+
+const indicadorJsx = `<div style={{
+        position: 'fixed', top: 0, left: '50%', transform: 'translateX(-50%)',
+        zIndex: 100, maxWidth: 390, width: '100%',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        height: refrescando ? 50 : Math.min(pullDistance, 80),
+        opacity: refrescando ? 1 : Math.min(pullDistance / 80, 1),
+        background: 'rgba(240,240,245,0.95)',
+        backdropFilter: 'blur(8px)',
+        transition: refrescando ? 'height 0.2s' : 'none',
+        pointerEvents: 'none',
+        fontSize: 13, color: '#7F77DD', fontWeight: 500
+      }}>
+        {refrescando ? (
+          <span><span className='spin' style={{ display: 'inline-block' }}>🔄</span> Actualizando...</span>
+        ) : pullDistance > 80 ? (
+          <span>↑ Suelta para refrescar</span>
+        ) : pullDistance > 0 ? (
+          <span style={{ display: 'inline-block', transform: \`rotate(\${Math.min(pullDistance * 2, 180)}deg)\` }}>↓</span>
+        ) : null}
+      </div>
+      <Header`
+
+if (!code.includes('Suelta para refrescar')) {
+  if (regexIndicador.test(code)) {
+    code = code.replace(regexIndicador, `$1${indicadorJsx}`)
     cambios++
-    console.log('✅ Tarjeta PRÓXIMO CONCIERTO: skeleton aplicado')
+    console.log('✅ Indicador visual añadido')
   } else {
-    console.log('⚠️  No se encontró {siguiente && (')
+    console.error('❌ No se encontró el contenedor principal. Aborto.')
+    process.exit(1)
   }
 } else {
-  console.log('ℹ️  Skeleton de PRÓXIMO ya aplicado')
-}
-
-// 2.6) PantallaConciertos
-const regexConciertos = /\{proximos\.length > 0 && \(\s*<>\s*<div style=\{\{ fontSize: 11, color: '#7F77DD', fontWeight: 500, marginBottom: 8 \}\}>PRÓXIMOS<\/div>\s*\{proximos\.map\(c => <TarjetaConcierto key=\{c\.id\} c=\{c\} \/>\)\}\s*<\/>\s*\)\}/
-if (regexConciertos.test(code) && !code.includes('cargando && (\n        <>\n          <div style={{ fontSize: 11, color: \'#7F77DD\'')) {
-  code = code.replace(regexConciertos, `{cargando && (
-        <>
-          <div style={{ fontSize: 11, color: '#7F77DD', fontWeight: 500, marginBottom: 8 }}>PRÓXIMOS</div>
-          {Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}
-        </>
-      )}
-      {!cargando && proximos.length > 0 && (
-        <>
-          <div style={{ fontSize: 11, color: '#7F77DD', fontWeight: 500, marginBottom: 8 }}>PRÓXIMOS</div>
-          {proximos.map(c => <TarjetaConcierto key={c.id} c={c} />)}
-        </>
-      )}`)
-  cambios++
-  console.log('✅ PantallaConciertos: skeletons aplicados')
-} else {
-  console.log('ℹ️  Skeleton de PantallaConciertos ya aplicado o no encontrado')
+  console.log('ℹ️  Indicador ya existía')
 }
 
 writeFileSync('src/App.jsx', code)

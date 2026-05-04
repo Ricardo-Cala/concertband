@@ -19,6 +19,8 @@ export default function App() {
   const [mostrarNuevo, setMostrarNuevo] = useState(false)
   const [verEstadisticas, setVerEstadisticas] = useState(false)
   const [cargando, setCargando] = useState(true)
+  const [pullDistance, setPullDistance] = useState(0)
+  const [refrescando, setRefrescando] = useState(false)
 
   useEffect(() => {
     supabase.from('amigos').select('*').then(({ data }) => data && setAmigos(data))
@@ -46,28 +48,44 @@ export default function App() {
   useEffect(() => {
     let startY = 0
     let pulling = false
+    let currentDistance = 0
 
     const onTouchStart = (e) => {
       startY = e.touches[0].clientY
       pulling = window.scrollY === 0
     }
 
+    const onTouchMove = (e) => {
+      if (!pulling) return
+      const diff = e.touches[0].clientY - startY
+      if (diff > 0 && diff < 150) {
+        currentDistance = diff
+        setPullDistance(diff)
+      }
+    }
+
     const onTouchEnd = async (e) => {
       if (!pulling) return
       const diff = e.changedTouches[0].clientY - startY
+      setPullDistance(0)
       if (diff > 80) {
+        setRefrescando(true)
         await cargarConciertos()
         await supabase.from('amigos').select('*').then(({ data }) => data && setAmigos(data))
         await supabase.from('asistentes').select('*').then(({ data }) => data && setAsistentes(data))
         await supabase.from('gastos').select('*').then(({ data }) => data && setGastos(data))
+        setRefrescando(false)
       }
       pulling = false
+      currentDistance = 0
     }
 
     document.addEventListener('touchstart', onTouchStart, { passive: true })
+    document.addEventListener('touchmove', onTouchMove, { passive: true })
     document.addEventListener('touchend', onTouchEnd, { passive: true })
     return () => {
       document.removeEventListener('touchstart', onTouchStart)
+      document.removeEventListener('touchmove', onTouchMove)
       document.removeEventListener('touchend', onTouchEnd)
     }
   }, [])
@@ -353,6 +371,26 @@ export default function App() {
 
   return (
     <div style={{ maxWidth: 390, margin: '0 auto', background: '#f0f0f5', minHeight: '100vh' }}>
+      <div style={{
+        position: 'fixed', top: 0, left: '50%', transform: 'translateX(-50%)',
+        zIndex: 100, maxWidth: 390, width: '100%',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        height: refrescando ? 50 : Math.min(pullDistance, 80),
+        opacity: refrescando ? 1 : Math.min(pullDistance / 80, 1),
+        background: 'rgba(240,240,245,0.95)',
+        backdropFilter: 'blur(8px)',
+        transition: refrescando ? 'height 0.2s' : 'none',
+        pointerEvents: 'none',
+        fontSize: 13, color: '#7F77DD', fontWeight: 500
+      }}>
+        {refrescando ? (
+          <span><span className='spin' style={{ display: 'inline-block' }}>🔄</span> Actualizando...</span>
+        ) : pullDistance > 80 ? (
+          <span>↑ Suelta para refrescar</span>
+        ) : pullDistance > 0 ? (
+          <span style={{ display: 'inline-block', transform: `rotate(${Math.min(pullDistance * 2, 180)}deg)` }}>↓</span>
+        ) : null}
+      </div>
       <Header amigos={amigos} />
 
       {/* NAVBAR CON ICONOS LUCIDE */}
