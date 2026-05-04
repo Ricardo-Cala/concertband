@@ -1,43 +1,24 @@
 import { readFileSync, writeFileSync } from 'fs'
 
-let nc = readFileSync('src/components/NuevoConcierto.jsx', 'utf8')
+let code = readFileSync('src/App.jsx', 'utf8')
 
-// 1) Quitar el log de RENDER
-const viejoRender = `  const [foco, setFoco] = useState(null)
+// 1) Cambiar el cálculo de diasRestantes para normalizar a medianoche y usar floor
+code = code.replace(
+  `const diasRestantes = siguiente ? Math.ceil((new Date(siguiente.fecha) - hoy) / (1000 * 60 * 60 * 24)) : null`,
+  `const diasRestantes = siguiente ? (() => {
+    const fechaConcierto = new Date(siguiente.fecha)
+    fechaConcierto.setHours(0, 0, 0, 0)
+    const hoyNorm = new Date()
+    hoyNorm.setHours(0, 0, 0, 0)
+    return Math.round((fechaConcierto - hoyNorm) / (1000 * 60 * 60 * 24))
+  })() : null`
+)
 
-  console.log('🟢 RENDER NuevoConcierto | conciertos:', conciertos?.length, '| foco:', foco, '| artista escrito:', form.artista)`
+// 2) Actualizar el texto singular/plural para incluir "hoy" cuando son 0 días
+code = code.replace(
+  `{diasRestantes === 1 ? 'día' : 'días'}`,
+  `{diasRestantes === 0 ? '¡HOY!' : diasRestantes === 1 ? 'día' : 'días'}`
+)
 
-const nuevoRender = `  const [foco, setFoco] = useState(null)`
-
-if (nc.includes(viejoRender)) {
-  nc = nc.replace(viejoRender, nuevoRender)
-  console.log('✅ Log de RENDER eliminado')
-}
-
-// 2) Restaurar el useMemo de sugerenciasArtista sin logs
-const viejoMemo = `  const sugerenciasArtista = useMemo(() => {
-    const q = normalizar(form.artista)
-    console.log('🔎 calculando sugerenciasArtista | q:', q, '| listaArtistas:', listaArtistas)
-    if (!q) return []
-    const result = listaArtistas
-      .filter(a => normalizar(a).includes(q) && normalizar(a) !== q)
-      .slice(0, 5)
-    console.log('🔎 resultado sugerenciasArtista:', result)
-    return result
-  }, [form.artista, listaArtistas])`
-
-const nuevoMemo = `  const sugerenciasArtista = useMemo(() => {
-    const q = normalizar(form.artista)
-    if (!q) return []
-    return listaArtistas
-      .filter(a => normalizar(a).includes(q) && normalizar(a) !== q)
-      .slice(0, 5)
-  }, [form.artista, listaArtistas])`
-
-if (nc.includes(viejoMemo)) {
-  nc = nc.replace(viejoMemo, nuevoMemo)
-  console.log('✅ Logs de sugerenciasArtista eliminados')
-}
-
-writeFileSync('src/components/NuevoConcierto.jsx', nc)
-console.log('\n🎸 Listo para publicar')
+writeFileSync('src/App.jsx', code)
+console.log('✅ Cálculo de días restantes corregido')

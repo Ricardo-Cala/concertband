@@ -139,7 +139,13 @@ export default function App() {
 
   const PantallaInicio = () => {
     const siguiente = proximos[0]
-    const diasRestantes = siguiente ? Math.ceil((new Date(siguiente.fecha) - hoy) / (1000 * 60 * 60 * 24)) : null
+    const diasRestantes = siguiente ? (() => {
+    const fechaConcierto = new Date(siguiente.fecha)
+    fechaConcierto.setHours(0, 0, 0, 0)
+    const hoyNorm = new Date()
+    hoyNorm.setHours(0, 0, 0, 0)
+    return Math.round((fechaConcierto - hoyNorm) / (1000 * 60 * 60 * 24))
+  })() : null
     const [resumen, setResumen] = useState({ van: 0, entradas: 0, pendientePago: 0 })
 
     useEffect(() => {
@@ -182,7 +188,7 @@ export default function App() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 14 }}>
               <div style={{ textAlign: 'center', flexShrink: 0 }}>
                 <div style={{ fontSize: 42, fontWeight: 600, color: '#7F77DD', lineHeight: 1 }}>{diasRestantes}</div>
-                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>{diasRestantes === 1 ? 'día' : 'días'}</div>
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>{diasRestantes === 0 ? '¡HOY!' : diasRestantes === 1 ? 'día' : 'días'}</div>
               </div>
               <div style={{ borderLeft: '1px solid rgba(255,255,255,0.15)', paddingLeft: 16, flex: 1 }}>
                 <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 4 }}>PRÓXIMO CONCIERTO</div>
