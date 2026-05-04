@@ -1,24 +1,29 @@
 import { readFileSync, writeFileSync } from 'fs'
 
-let code = readFileSync('src/App.jsx', 'utf8')
+let code = readFileSync('src/components/EstadisticasGrupo.jsx', 'utf8')
 
-// 1) Cambiar el cálculo de diasRestantes para normalizar a medianoche y usar floor
-code = code.replace(
-  `const diasRestantes = siguiente ? Math.ceil((new Date(siguiente.fecha) - hoy) / (1000 * 60 * 60 * 24)) : null`,
-  `const diasRestantes = siguiente ? (() => {
-    const fechaConcierto = new Date(siguiente.fecha)
-    fechaConcierto.setHours(0, 0, 0, 0)
-    const hoyNorm = new Date()
-    hoyNorm.setHours(0, 0, 0, 0)
-    return Math.round((fechaConcierto - hoyNorm) / (1000 * 60 * 60 * 24))
-  })() : null`
-)
+// Buscar el bloque por regex (más tolerante a espacios)
+const regex = /\/\/ Artista top[\s\S]*?const artistaTop = Object\.entries\(artistasCount\)\.sort\(\(a, b\) => b\[1\] - a\[1\]\)\[0\]/
 
-// 2) Actualizar el texto singular/plural para incluir "hoy" cuando son 0 días
-code = code.replace(
-  `{diasRestantes === 1 ? 'día' : 'días'}`,
-  `{diasRestantes === 0 ? '¡HOY!' : diasRestantes === 1 ? 'día' : 'días'}`
-)
+const nuevo = `// Artista top (dividiendo carteles compuestos: &, +, ',' y ' Y ')
+    const artistasCount = {}
+    conciertosPasados.forEach(c => {
+      if (!c.artista) return
+      const partes = c.artista
+        .split(/\\s*&\\s*|\\s*\\+\\s*|\\s*,\\s*|\\s+Y\\s+/i)
+        .map(p => p.trim())
+        .filter(Boolean)
+      partes.forEach(nombre => {
+        artistasCount[nombre] = (artistasCount[nombre] || 0) + 1
+      })
+    })
+    const artistaTop = Object.entries(artistasCount).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0]`
 
-writeFileSync('src/App.jsx', code)
-console.log('✅ Cálculo de días restantes corregido')
+if (!regex.test(code)) {
+  console.error('❌ No se encontró el bloque. Ejecuta: type src\\components\\EstadisticasGrupo.jsx | findstr /N "artistaTop"')
+  process.exit(1)
+}
+
+code = code.replace(regex, nuevo)
+writeFileSync('src/components/EstadisticasGrupo.jsx', code)
+console.log('✅ Cálculo de artista top actualizado (divide carteles compuestos)')

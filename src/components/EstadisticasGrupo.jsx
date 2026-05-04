@@ -68,12 +68,19 @@ export default function EstadisticasGrupo({ conciertos, amigos, asistentes, gast
       .sort((a, b) => b.cantidad - a.cantidad)
       .slice(0, 8)
 
-    // Artista top
+    // Artista top (dividiendo carteles compuestos: &, +, ',' y ' Y ')
     const artistasCount = {}
     conciertosPasados.forEach(c => {
-      if (c.artista) artistasCount[c.artista] = (artistasCount[c.artista] || 0) + 1
+      if (!c.artista) return
+      const partes = c.artista
+        .split(/\s*&\s*|\s*\+\s*|\s*,\s*|\s+Y\s+/i)
+        .map(p => p.trim())
+        .filter(Boolean)
+      partes.forEach(nombre => {
+        artistasCount[nombre] = (artistasCount[nombre] || 0) + 1
+      })
     })
-    const artistaTop = Object.entries(artistasCount).sort((a, b) => b[1] - a[1])[0]
+    const artistaTop = Object.entries(artistasCount).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0]
 
     // Concierto más caro
     let conciertoMasCaro = null
