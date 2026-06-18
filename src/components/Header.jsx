@@ -3,21 +3,37 @@ import Avatar from './Avatar'
 export default function Header({ amigos }) {
   return (
     <div style={{
-      position: 'relative',
-      backgroundImage: 'url(/header-bg.jpg)',
-      backgroundSize: 'cover',
-      backgroundPosition: 'center top',
-      padding: '16px 20px 12px',
+      background: 'linear-gradient(135deg, var(--warm-grey), #4A4137)',
+      padding: '18px 20px 14px',
+      boxShadow: '0 6px 16px rgba(60,48,40,0.25)',
+      position: 'sticky',
+      top: 0,
+      zIndex: 10,
     }}>
-      <div style={{
-        position: 'absolute', inset: 0,
-        background: 'rgba(0,0,0,0.55)',
-      }} />
       <div style={{ position: 'relative', zIndex: 1 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-          <span style={{ fontSize: 18, fontWeight: 500, color: 'white' }}>BOLOS GRUPIIII</span>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 6,
+        }}>
+          <span style={{
+            fontSize: 19,
+            fontWeight: 600,
+            color: 'var(--sage-light)',
+            letterSpacing: '0.15em',
+          }}>
+            BOLOS GRUPIIII
+          </span>
         </div>
-        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', marginBottom: 10 }}>
+        <div style={{
+          fontSize: 10,
+          color: 'rgba(245,239,230,0.55)',
+          marginBottom: 12,
+          letterSpacing: '0.2em',
+          textTransform: 'uppercase',
+          fontWeight: 600,
+        }}>
           Tu grupo · {amigos.length} amigos
         </div>
         <div style={{ display: 'flex', gap: 6 }}>

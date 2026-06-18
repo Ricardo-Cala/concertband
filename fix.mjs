@@ -1,166 +1,52 @@
-import { writeFileSync, mkdirSync, readFileSync } from 'fs'
+import { writeFileSync } from 'fs'
 
-// 1. Crear carpeta src/styles si no existe
-mkdirSync('src/styles', { recursive: true })
+const headerCode = `import Avatar from './Avatar'
 
-// 2. Crear src/styles/theme.css con variables y utilities neumórficas
-const themeCSS = `/* ============================================
-   BOLOS GRUPIIII - Tema Natural Neutral
-   Neumorfismo + paleta beige/sage/warm-grey
-   ============================================ */
-
-@import url('https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700;800&display=swap');
-
-:root {
-  /* Fondos */
-  --bg: #EBDDD0;
-  --bg-light: #F5EFE6;
-  --bg-dark: #DACCBE;
-
-  /* Sombras neumórficas */
-  --shadow-dark: #C2B19F;
-  --shadow-light: #FFF8EE;
-
-  /* Acento sage green */
-  --sage: #B5C0A3;
-  --sage-dark: #8F9C7B;
-  --sage-light: #D2DAC4;
-
-  /* Warm grey (oscuros) */
-  --warm-grey: #5C5246;
-  --warm-grey-light: #8A7F73;
-
-  /* Texto */
-  --text-primary: #3D3530;
-  --text-secondary: #8A7F73;
-
-  /* Tipografía */
-  --font-main: 'Century Gothic', 'Jost', 'Avenir', 'Trebuchet MS', sans-serif;
-}
-
-/* ===== UTILITIES NEUMÓRFICAS ===== */
-
-.neu-raised {
-  background: var(--bg);
-  border-radius: 20px;
-  box-shadow: 8px 8px 16px var(--shadow-dark), -8px -8px 16px var(--shadow-light);
-}
-
-.neu-raised-sm {
-  background: var(--bg);
-  border-radius: 14px;
-  box-shadow: 5px 5px 10px var(--shadow-dark), -5px -5px 10px var(--shadow-light);
-}
-
-.neu-pressed {
-  background: var(--bg);
-  border-radius: 14px;
-  box-shadow: inset 4px 4px 8px var(--shadow-dark), inset -4px -4px 8px var(--shadow-light);
-}
-
-.neu-pressed-deep {
-  background: var(--bg);
-  border-radius: 18px;
-  box-shadow: inset 5px 5px 10px var(--shadow-dark), inset -5px -5px 10px var(--shadow-light);
-}
-
-.neu-flat {
-  background: linear-gradient(145deg, var(--bg-light), var(--bg-dark));
-  border-radius: 18px;
-  box-shadow: 7px 7px 14px var(--shadow-dark), -7px -7px 14px var(--shadow-light);
-}
-
-.neu-btn-sage {
-  background: linear-gradient(145deg, var(--sage-light), var(--sage-dark));
-  border-radius: 14px;
-  box-shadow: 5px 5px 10px var(--shadow-dark), -5px -5px 10px var(--shadow-light);
-  border: none;
-  color: var(--warm-grey);
-  font-weight: 700;
-  cursor: pointer;
-  font-family: var(--font-main);
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-}
-
-/* ===== BADGES ===== */
-.neu-badge {
-  padding: 7px 13px;
-  border-radius: 20px;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--warm-grey);
-  box-shadow: 3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light);
-  letter-spacing: 0.05em;
-  display: inline-block;
-}
-.neu-badge-sage { background: linear-gradient(145deg, var(--sage-light), var(--sage)); }
-.neu-badge-neutral {
-  background: linear-gradient(145deg, var(--bg-light), var(--bg-dark));
-  color: var(--text-secondary);
-}
-
-/* ===== TIPOGRAFÍA ===== */
-.t-label {
-  font-size: 10px;
-  color: var(--text-secondary);
-  font-weight: 600;
-  letter-spacing: 0.25em;
-  text-transform: uppercase;
-}
-
-.t-title {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--text-primary);
-  letter-spacing: 0.25em;
-  text-transform: uppercase;
-}
-
-.t-number {
-  font-weight: 300;
-  color: var(--sage-dark);
-  letter-spacing: 0.02em;
-}
-`
-writeFileSync('src/styles/theme.css', themeCSS)
-console.log('✔ src/styles/theme.css creado')
-
-// 3. Reescribir src/index.css con la nueva base
-const indexCSS = `* { box-sizing: border-box; margin: 0; padding: 0; }
-
-body {
-  font-family: var(--font-main);
-  background: var(--bg);
-  color: var(--text-primary);
-  letter-spacing: 0.02em;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-button {
-  cursor: pointer;
-  font-family: inherit;
-}
-
-input, textarea, select {
-  font-family: inherit;
-}
-`
-writeFileSync('src/index.css', indexCSS)
-console.log('✔ src/index.css reescrito')
-
-// 4. Añadir import del theme.css en main.jsx (antes de index.css)
-let main = readFileSync('src/main.jsx', 'utf8')
-if (!main.includes('./styles/theme.css')) {
-  main = main.replace(
-    `import './index.css'`,
-    `import './styles/theme.css'\nimport './index.css'`
+export default function Header({ amigos }) {
+  return (
+    <div style={{
+      background: 'linear-gradient(135deg, var(--warm-grey), #4A4137)',
+      padding: '18px 20px 14px',
+      boxShadow: '0 6px 16px rgba(60,48,40,0.25)',
+      position: 'sticky',
+      top: 0,
+      zIndex: 10,
+    }}>
+      <div style={{ position: 'relative', zIndex: 1 }}>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 6,
+        }}>
+          <span style={{
+            fontSize: 19,
+            fontWeight: 600,
+            color: 'var(--sage-light)',
+            letterSpacing: '0.15em',
+          }}>
+            BOLOS GRUPIIII
+          </span>
+        </div>
+        <div style={{
+          fontSize: 10,
+          color: 'rgba(245,239,230,0.55)',
+          marginBottom: 12,
+          letterSpacing: '0.2em',
+          textTransform: 'uppercase',
+          fontWeight: 600,
+        }}>
+          Tu grupo · {amigos.length} amigos
+        </div>
+        <div style={{ display: 'flex', gap: 6 }}>
+          {amigos.map(a => (
+            <Avatar key={a.id} amigo={a} size={34} />
+          ))}
+        </div>
+      </div>
+    </div>
   )
-  writeFileSync('src/main.jsx', main)
-  console.log('✔ src/main.jsx actualizado con import del theme')
-} else {
-  console.log('• src/main.jsx ya tiene el theme importado')
-}
+}`
 
-console.log('\n✅ Fase 0 completada')
+writeFileSync('src/components/Header.jsx', headerCode)
+console.log('✔ src/components/Header.jsx actualizado (Fase 1)')
