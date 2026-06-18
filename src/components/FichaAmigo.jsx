@@ -24,7 +24,6 @@ export default function FichaAmigo({ amigo, amigos, onCerrar, onEditar }) {
 
     setAsistencias(asis || [])
 
-    // Deduplicar conciertos por id (por si hay filas repetidas en asistentes)
     const mapaConciertos = new Map()
     ;(asis || []).forEach(a => {
       if (a.conciertos && a.conciertos.id && !mapaConciertos.has(a.conciertos.id)) {
@@ -70,23 +69,47 @@ export default function FichaAmigo({ amigo, amigos, onCerrar, onEditar }) {
   }, {})
   const ciudadFavorita = Object.entries(ciudades).sort((a, b) => b[1] - a[1])[0]
 
-  const coincidencias = amigos.filter(a => a.id !== amigo.id).map(a => {
-    const ids = conciertos.map(c => c.id)
-    return { amigo: a, count: 0 }
-  })
+  const card = {
+    background: 'var(--bg)', borderRadius: 18, padding: 16, marginBottom: 14,
+    boxShadow: '6px 6px 12px var(--shadow-dark), -6px -6px 12px var(--shadow-light)',
+  }
+  const tituloSeccion = {
+    fontSize: 10, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 14,
+    letterSpacing: '0.25em', textTransform: 'uppercase',
+  }
+  const inputStyle = {
+    flex: 1, padding: '10px 14px', borderRadius: 12, border: 'none',
+    background: 'var(--bg)',
+    boxShadow: 'inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light)',
+    fontSize: 14, color: 'var(--text-primary)', fontFamily: 'inherit', outline: 'none',
+  }
 
   return (
-    <div style={{ maxWidth: 390, margin: '0 auto', background: '#f0f0f5', minHeight: '100vh' }}>
-      <div style={{ background: '#1a1a2e', padding: '20px 16px 24px' }}>
+    <div style={{ maxWidth: 390, margin: '0 auto', background: 'var(--bg)', minHeight: '100vh' }}>
+      <div style={{
+        background: 'linear-gradient(135deg, var(--warm-grey), #4A4137)',
+        padding: '22px 18px 28px',
+        boxShadow: '0 6px 16px rgba(60,48,40,0.25)',
+      }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
-          <button onClick={onCerrar} style={{ background: 'none', border: 'none', color: 'white', fontSize: 22, cursor: 'pointer', padding: 0 }}>‹</button>
-          <button onClick={onEditar} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', borderRadius: 8, padding: '4px 12px', fontSize: 12, cursor: 'pointer' }}>✏️ Editar</button>
+          <button onClick={onCerrar} style={{
+            background: 'rgba(245,239,230,0.1)', border: 'none', color: 'var(--sage-light)',
+            fontSize: 22, cursor: 'pointer', width: 36, height: 36, borderRadius: '50%',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontFamily: 'inherit',
+          }}>‹</button>
+          <button onClick={onEditar} style={{
+            background: 'rgba(245,239,230,0.1)', border: 'none', color: 'var(--sage-light)',
+            borderRadius: 14, padding: '6px 14px', fontSize: 10, cursor: 'pointer',
+            letterSpacing: '0.2em', textTransform: 'uppercase', fontWeight: 700,
+            fontFamily: 'inherit',
+          }}>✏️ Editar</button>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
-          <Avatar amigo={amigo} size={80} />
-          <div style={{ fontSize: 20, fontWeight: 600, color: 'white' }}>{amigo.nombre}</div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+          <Avatar amigo={amigo} size={86} />
+          <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--sage-light)', letterSpacing: '0.06em' }}>{amigo.nombre}</div>
           {amigo.fecha_nacimiento && (
-            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>
+            <div style={{ fontSize: 10, color: 'rgba(245,239,230,0.55)', letterSpacing: '0.2em', textTransform: 'uppercase', fontWeight: 600 }}>
               🎂 {new Date(amigo.fecha_nacimiento).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}
             </div>
           )}
@@ -96,33 +119,44 @@ export default function FichaAmigo({ amigo, amigos, onCerrar, onEditar }) {
       <div style={{ padding: 16 }}>
 
         {/* ESTADÍSTICAS */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 16 }}>
-          <div style={{ background: 'white', borderRadius: 12, padding: 12, textAlign: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-            <div style={{ fontSize: 24, fontWeight: 600, color: '#7F77DD' }}>{conciertos.length}</div>
-            <div style={{ fontSize: 10, color: '#888', marginTop: 2 }}>Conciertos</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 16 }}>
+          <div style={{ ...card, padding: 14, textAlign: 'center', marginBottom: 0 }}>
+            <div style={{ fontSize: 26, fontWeight: 300, color: 'var(--sage-dark)' }}>{conciertos.length}</div>
+            <div style={{ fontSize: 9, color: 'var(--text-secondary)', marginTop: 4, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase' }}>Conciertos</div>
           </div>
-          <div style={{ background: 'white', borderRadius: 12, padding: 12, textAlign: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-            <div style={{ fontSize: 24, fontWeight: 600, color: '#7F77DD' }}>{Object.keys(ciudades).length}</div>
-            <div style={{ fontSize: 10, color: '#888', marginTop: 2 }}>Ciudades</div>
+          <div style={{ ...card, padding: 14, textAlign: 'center', marginBottom: 0 }}>
+            <div style={{ fontSize: 26, fontWeight: 300, color: 'var(--sage-dark)' }}>{Object.keys(ciudades).length}</div>
+            <div style={{ fontSize: 9, color: 'var(--text-secondary)', marginTop: 4, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase' }}>Ciudades</div>
           </div>
-          <div style={{ background: 'white', borderRadius: 12, padding: 12, textAlign: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-            <div style={{ fontSize: 24, fontWeight: 600, color: '#7F77DD' }}>{Object.keys(conciertosPerYear).length}</div>
-            <div style={{ fontSize: 10, color: '#888', marginTop: 2 }}>Años</div>
+          <div style={{ ...card, padding: 14, textAlign: 'center', marginBottom: 0 }}>
+            <div style={{ fontSize: 26, fontWeight: 300, color: 'var(--sage-dark)' }}>{Object.keys(conciertosPerYear).length}</div>
+            <div style={{ fontSize: 9, color: 'var(--text-secondary)', marginTop: 4, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase' }}>Años</div>
           </div>
         </div>
 
         {/* CONCIERTOS POR AÑO */}
         {Object.keys(conciertosPerYear).length > 0 && (
-          <div style={{ background: 'white', borderRadius: 12, padding: 14, marginBottom: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-            <div style={{ fontSize: 11, fontWeight: 500, color: '#888', marginBottom: 12 }}>CONCIERTOS POR AÑO</div>
+          <div style={card}>
+            <div style={tituloSeccion}>Conciertos por año</div>
             {Object.entries(conciertosPerYear).sort((a, b) => b[0] - a[0]).map(([year, count]) => (
-              <div key={year} style={{ marginBottom: 8 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <span style={{ fontSize: 13, fontWeight: 500 }}>{year}</span>
-                  <span style={{ fontSize: 13, color: '#7F77DD', fontWeight: 500 }}>{count} concierto{count > 1 ? 's' : ''}</span>
+              <div key={year} style={{ marginBottom: 10 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '0.04em' }}>{year}</span>
+                  <span style={{ fontSize: 11, color: 'var(--sage-dark)', fontWeight: 700, letterSpacing: '0.05em' }}>{count} concierto{count > 1 ? 's' : ''}</span>
                 </div>
-                <div style={{ height: 6, background: '#f0f0f5', borderRadius: 3 }}>
-                  <div style={{ height: 6, background: '#7F77DD', borderRadius: 3, width: `${(count / Math.max(...Object.values(conciertosPerYear))) * 100}%` }} />
+                <div style={{
+                  height: 8, borderRadius: 4,
+                  background: 'var(--bg)',
+                  boxShadow: 'inset 2px 2px 4px var(--shadow-dark), inset -2px -2px 4px var(--shadow-light)',
+                  overflow: 'hidden',
+                }}>
+                  <div style={{
+                    height: '100%',
+                    background: 'linear-gradient(90deg, var(--sage), var(--sage-dark))',
+                    borderRadius: 4,
+                    width: `${(count / Math.max(...Object.values(conciertosPerYear))) * 100}%`,
+                    transition: 'width 0.6s ease',
+                  }} />
                 </div>
               </div>
             ))}
@@ -131,13 +165,19 @@ export default function FichaAmigo({ amigo, amigos, onCerrar, onEditar }) {
 
         {/* CIUDAD FAVORITA */}
         {ciudadFavorita && (
-          <div style={{ background: 'white', borderRadius: 12, padding: 14, marginBottom: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-            <div style={{ fontSize: 11, fontWeight: 500, color: '#888', marginBottom: 8 }}>CIUDAD MÁS VISITADA</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ fontSize: 24 }}>📍</span>
+          <div style={card}>
+            <div style={tituloSeccion}>Ciudad más visitada</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              <div style={{
+                fontSize: 26, width: 50, height: 50,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: 'linear-gradient(145deg, var(--sage-light), var(--sage))',
+                borderRadius: '50%',
+                boxShadow: '3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light)',
+              }}>📍</div>
               <div>
-                <div style={{ fontSize: 15, fontWeight: 600 }}>{ciudadFavorita[0]}</div>
-                <div style={{ fontSize: 12, color: '#888' }}>{ciudadFavorita[1]} concierto{ciudadFavorita[1] > 1 ? 's' : ''}</div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '0.04em' }}>{ciudadFavorita[0]}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2, letterSpacing: '0.04em' }}>{ciudadFavorita[1]} concierto{ciudadFavorita[1] > 1 ? 's' : ''}</div>
               </div>
             </div>
           </div>
@@ -148,16 +188,20 @@ export default function FichaAmigo({ amigo, amigos, onCerrar, onEditar }) {
           const hoy = new Date()
           hoy.setHours(0, 0, 0, 0)
           return (
-            <div style={{ background: 'white', borderRadius: 12, padding: 14, marginBottom: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-              <div style={{ fontSize: 11, fontWeight: 500, color: '#888', marginBottom: 10 }}>HISTORIAL</div>
+            <div style={card}>
+              <div style={tituloSeccion}>Historial</div>
               {conciertos.sort((a, b) => new Date(b.fecha) - new Date(a.fecha)).map(c => {
                 const fechaConcierto = new Date(c.fecha)
                 fechaConcierto.setHours(0, 0, 0, 0)
                 const pasado = fechaConcierto < hoy
                 return (
-                  <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '0.5px solid #f0f0f0' }}>
-                    <span style={{ fontSize: 13, fontWeight: 500, color: pasado ? '#aaa' : '#333' }}>{c.artista}</span>
-                    <span style={{ fontSize: 12, color: pasado ? '#bbb' : '#888' }}>{new Date(c.fecha).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                  <div key={c.id} style={{
+                    display: 'flex', justifyContent: 'space-between',
+                    padding: '8px 0', borderBottom: '0.5px solid var(--bg-dark)',
+                    opacity: pasado ? 0.55 : 1,
+                  }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '0.03em' }}>{c.artista}</span>
+                    <span style={{ fontSize: 11, color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>{new Date(c.fecha).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                   </div>
                 )
               })}
@@ -166,10 +210,14 @@ export default function FichaAmigo({ amigo, amigos, onCerrar, onEditar }) {
         })()}
 
         {/* GUSTOS MUSICALES */}
-        <div style={{ background: 'white', borderRadius: 12, padding: 14, marginBottom: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <div style={{ fontSize: 11, fontWeight: 500, color: '#888' }}>GUSTOS MUSICALES</div>
-            <button onClick={() => setEditandoGustos(!editandoGustos)} style={{ background: 'none', border: 'none', fontSize: 12, color: '#7F77DD', cursor: 'pointer', fontWeight: 500 }}>
+        <div style={card}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+            <div style={tituloSeccion}>Gustos musicales</div>
+            <button onClick={() => setEditandoGustos(!editandoGustos)} style={{
+              background: 'none', border: 'none', fontSize: 10, color: 'var(--sage-dark)',
+              cursor: 'pointer', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase',
+              fontFamily: 'inherit',
+            }}>
               {editandoGustos ? 'Cancelar' : '✏️ Editar'}
             </button>
           </div>
@@ -177,24 +225,35 @@ export default function FichaAmigo({ amigo, amigos, onCerrar, onEditar }) {
           {!editandoGustos && (
             <div>
               {artistas.length === 0 && generos.length === 0 && (
-                <div style={{ fontSize: 13, color: '#aaa', textAlign: 'center', padding: '8px 0' }}>Sin gustos registrados todavía</div>
+                <div style={{ fontSize: 12, color: 'var(--text-secondary)', textAlign: 'center', padding: '10px 0', letterSpacing: '0.05em' }}>Sin gustos registrados todavía</div>
               )}
               {artistas.length > 0 && (
-                <div style={{ marginBottom: 10 }}>
-                  <div style={{ fontSize: 11, color: '#888', marginBottom: 6 }}>Artistas favoritos</div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                <div style={{ marginBottom: 14 }}>
+                  <div style={{ fontSize: 9, color: 'var(--text-secondary)', marginBottom: 8, letterSpacing: '0.25em', textTransform: 'uppercase', fontWeight: 700 }}>Artistas favoritos</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                     {artistas.map((a, i) => (
-                      <span key={i} style={{ background: '#EEEDFE', color: '#3C3489', borderRadius: 20, padding: '4px 10px', fontSize: 12, fontWeight: 500 }}>🎵 {a}</span>
+                      <span key={i} style={{
+                        background: 'var(--bg)', color: 'var(--text-primary)',
+                        borderRadius: 20, padding: '6px 12px', fontSize: 11, fontWeight: 600,
+                        letterSpacing: '0.04em',
+                        boxShadow: '3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light)',
+                      }}>🎵 {a}</span>
                     ))}
                   </div>
                 </div>
               )}
               {generos.length > 0 && (
                 <div>
-                  <div style={{ fontSize: 11, color: '#888', marginBottom: 6 }}>Géneros favoritos</div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  <div style={{ fontSize: 9, color: 'var(--text-secondary)', marginBottom: 8, letterSpacing: '0.25em', textTransform: 'uppercase', fontWeight: 700 }}>Géneros favoritos</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                     {generos.map((g, i) => (
-                      <span key={i} style={{ background: '#EAF3DE', color: '#27500A', borderRadius: 20, padding: '4px 10px', fontSize: 12, fontWeight: 500 }}>🎸 {g}</span>
+                      <span key={i} style={{
+                        background: 'linear-gradient(145deg, var(--sage-light), var(--sage))',
+                        color: 'var(--warm-grey)',
+                        borderRadius: 20, padding: '6px 12px', fontSize: 11, fontWeight: 700,
+                        letterSpacing: '0.04em',
+                        boxShadow: '3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light)',
+                      }}>🎸 {g}</span>
                     ))}
                   </div>
                 </div>
@@ -204,42 +263,66 @@ export default function FichaAmigo({ amigo, amigos, onCerrar, onEditar }) {
 
           {editandoGustos && (
             <div>
-              <div style={{ marginBottom: 14 }}>
-                <div style={{ fontSize: 12, color: '#666', marginBottom: 8 }}>Artistas favoritos</div>
-                <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 9, color: 'var(--text-secondary)', marginBottom: 10, letterSpacing: '0.25em', textTransform: 'uppercase', fontWeight: 700 }}>Artistas favoritos</div>
+                <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
                   <input value={nuevoArtista} onChange={e => setNuevoArtista(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && añadirArtista()}
-                    placeholder='Ej: The Beatles'
-                    style={{ flex: 1, padding: '8px 10px', borderRadius: 8, border: '1px solid #ddd', fontSize: 14 }} />
-                  <button onClick={añadirArtista} style={{ padding: '8px 14px', borderRadius: 8, border: 'none', background: '#7F77DD', color: 'white', fontSize: 13, cursor: 'pointer' }}>+</button>
+                    placeholder='Ej: The Beatles' style={inputStyle} />
+                  <button onClick={añadirArtista} style={{
+                    padding: '8px 16px', borderRadius: 12, border: 'none',
+                    background: 'linear-gradient(145deg, var(--sage-light), var(--sage-dark))',
+                    color: 'var(--warm-grey)', fontSize: 16, fontWeight: 700, cursor: 'pointer',
+                    boxShadow: '3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light)',
+                    fontFamily: 'inherit',
+                  }}>+</button>
                 </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                   {artistas.map((a, i) => (
-                    <span key={i} style={{ background: '#EEEDFE', color: '#3C3489', borderRadius: 20, padding: '4px 10px', fontSize: 12, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span key={i} style={{
+                      background: 'var(--bg)', color: 'var(--text-primary)',
+                      borderRadius: 20, padding: '6px 12px', fontSize: 11, fontWeight: 600,
+                      letterSpacing: '0.04em',
+                      boxShadow: '3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light)',
+                      display: 'flex', alignItems: 'center', gap: 8,
+                    }}>
                       🎵 {a}
-                      <button onClick={() => eliminarArtista(i)} style={{ background: 'none', border: 'none', color: '#3C3489', cursor: 'pointer', fontSize: 12, padding: 0 }}>✕</button>
+                      <button onClick={() => eliminarArtista(i)} style={{
+                        background: 'none', border: 'none', color: 'var(--text-secondary)',
+                        cursor: 'pointer', fontSize: 12, padding: 0, fontFamily: 'inherit',
+                      }}>✕</button>
                     </span>
                   ))}
                 </div>
               </div>
 
-              <div style={{ marginBottom: 14 }}>
-                <div style={{ fontSize: 12, color: '#666', marginBottom: 8 }}>Géneros favoritos</div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 9, color: 'var(--text-secondary)', marginBottom: 10, letterSpacing: '0.25em', textTransform: 'uppercase', fontWeight: 700 }}>Géneros favoritos</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                   {GENEROS.map(g => (
                     <span key={g} onClick={() => toggleGenero(g)} style={{
-                      borderRadius: 20, padding: '4px 10px', fontSize: 12, fontWeight: 500, cursor: 'pointer',
-                      background: generos.includes(g) ? '#EAF3DE' : '#f0f0f5',
-                      color: generos.includes(g) ? '#27500A' : '#888',
-                      border: generos.includes(g) ? '1px solid #C0DD97' : '1px solid transparent',
+                      borderRadius: 20, padding: '6px 12px', fontSize: 11, fontWeight: 700, cursor: 'pointer',
+                      letterSpacing: '0.04em',
+                      background: generos.includes(g)
+                        ? 'linear-gradient(145deg, var(--sage-light), var(--sage))'
+                        : 'var(--bg)',
+                      color: generos.includes(g) ? 'var(--warm-grey)' : 'var(--text-secondary)',
+                      boxShadow: generos.includes(g)
+                        ? '3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light)'
+                        : 'inset 2px 2px 4px var(--shadow-dark), inset -2px -2px 4px var(--shadow-light)',
+                      transition: 'all 0.15s',
                     }}>{g}</span>
                   ))}
                 </div>
               </div>
 
               <button onClick={guardarGustos} disabled={guardando} style={{
-                width: '100%', padding: 10, borderRadius: 10, border: 'none',
-                background: '#7F77DD', color: 'white', fontSize: 14, fontWeight: 500, cursor: 'pointer'
+                width: '100%', padding: 14, borderRadius: 14, border: 'none',
+                background: 'linear-gradient(145deg, var(--sage-light), var(--sage-dark))',
+                color: 'var(--warm-grey)', fontSize: 11, fontWeight: 700, cursor: 'pointer',
+                letterSpacing: '0.2em', textTransform: 'uppercase',
+                boxShadow: '4px 4px 8px var(--shadow-dark), -4px -4px 8px var(--shadow-light)',
+                fontFamily: 'inherit',
               }}>{guardando ? 'Guardando...' : 'Guardar'}</button>
             </div>
           )}
