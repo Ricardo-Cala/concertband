@@ -1,398 +1,723 @@
 import { writeFileSync } from 'fs'
 
-const estadisticasCode = `import { useMemo } from 'react'
-import { ArrowLeft, TrendingUp, MapPin, Euro, Calendar, Music2, Trophy } from 'lucide-react'
+const code = `import { useState, useEffect } from 'react'
+import { supabase } from '../supabase'
 import Avatar from './Avatar'
+import Toast from './Toast'
+import Setlist from './Setlist'
+import Album from './Album'
+import FichaViaje from './FichaViaje'
 
-export default function EstadisticasGrupo({ conciertos, amigos, asistentes, gastos, onBack }) {
+export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }) {
+  const [subtab, setSubtab] = useState('asistencia')
+  const [asistentes, setAsistentes] = useState([])
+  const [gastos, setGastos] = useState([])
+  const [pagos, setPagos] = useState([])
+  const [transporte, setTransporte] = useState(null)
+  const [hotel, setHotel] = useState(null)
+  const [mostrarFormGasto, setMostrarFormGasto] = useState(false)
+  const [fichaViaje, setFichaViaje] = useState(null)
+  const [formGasto, setFormGasto] = useState({ comprador_id: '', precio_entrada: '', receptores: [] })
+  const [toast, setToast] = useState(null)
+  const [menuSubirId, setMenuSubirId] = useState(null)
+  const [menuEditarId, setMenuEditarId] = useState(null)
+  const [gastoEditando, setGastoEditando] = useState(null)
+  const [formEditarGasto, setFormEditarGasto] = useState({ comprador_id: '', precio_entrada: '' })
 
-  const stats = useMemo(() => {
-    const hoy = new Date()
-    hoy.setHours(0, 0, 0, 0)
-    const conciertosPasados = (conciertos || []).filter(c => new Date(c.fecha) < hoy)
+  const mostrarToast = (mensaje, tipo = 'ok') => setToast({ mensaje, tipo })
 
-    const totalConciertos = conciertosPasados.length
+  useEffect(() => { cargarDatos() }, [])
 
-    const ciudadesUnicas = new Set(conciertosPasados.map(c => c.ciudad).filter(Boolean))
-    const totalCiudades = ciudadesUnicas.size
-
-    const totalInvertido = (gastos || []).reduce((sum, g) => {
-      const precio = parseFloat(g.precio_entrada) || 0
-      const cant = parseInt(g.cantidad) || 0
-      return sum + (precio * cant)
-    }, 0)
-
-    const porAno = {}
-    conciertosPasados.forEach(c => {
-      const ano = new Date(c.fecha).getFullYear()
-      porAno[ano] = (porAno[ano] || 0) + 1
-    })
-    const datosPorAno = Object.keys(porAno).sort().map(ano => ({
-      ano: parseInt(ano),
-      cantidad: porAno[ano]
-    }))
-    const maxAno = datosPorAno.length > 0 ? Math.max(...datosPorAno.map(d => d.cantidad)) : 0
-
-    let anoMasActivo = null
-    let maxConciertosAno = 0
-    Object.entries(porAno).forEach(([ano, cant]) => {
-      if (cant > maxConciertosAno) {
-        maxConciertosAno = cant
-        anoMasActivo = ano
-      }
-    })
-
-    const idsConciertosPasados = new Set(conciertosPasados.map(c => c.id))
-    const asistenciaPorAmigo = {}
-    ;(asistentes || []).forEach(a => {
-      if (a.confirmado === true && idsConciertosPasados.has(a.concierto_id)) {
-        asistenciaPorAmigo[a.amigo_id] = (asistenciaPorAmigo[a.amigo_id] || 0) + 1
-      }
-    })
-
-    const ranking = (amigos || [])
-      .map(amigo => ({ ...amigo, conciertos: asistenciaPorAmigo[amigo.id] || 0 }))
-      .sort((a, b) => b.conciertos - a.conciertos)
-
-    const maxRanking = ranking.length > 0 ? ranking[0].conciertos : 0
-    const conciertero = ranking.length > 0 && ranking[0].conciertos > 0 ? ranking[0] : null
-
-    const ciudadesCount = {}
-    conciertosPasados.forEach(c => {
-      if (c.ciudad) ciudadesCount[c.ciudad] = (ciudadesCount[c.ciudad] || 0) + 1
-    })
-    const topCiudades = Object.entries(ciudadesCount)
-      .map(([ciudad, cant]) => ({ ciudad, cantidad: cant }))
-      .sort((a, b) => b.cantidad - a.cantidad)
-      .slice(0, 8)
-
-    const artistasCount = {}
-    conciertosPasados.forEach(c => {
-      if (!c.artista) return
-      const partes = c.artista
-        .split(/\\s*&\\s*|\\s*\\+\\s*|\\s*,\\s*|\\s+Y\\s+/i)
-        .map(p => p.trim())
-        .filter(Boolean)
-      partes.forEach(nombre => {
-        artistasCount[nombre] = (artistasCount[nombre] || 0) + 1
-      })
-    })
-    const artistaTop = Object.entries(artistasCount).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0]
-
-    let conciertoMasCaro = null
-    let precioMaximo = 0
-    ;(gastos || []).forEach(g => {
-      const precio = parseFloat(g.precio_entrada) || 0
-      if (precio > precioMaximo) {
-        precioMaximo = precio
-        const concierto = conciertosPasados.find(c => c.id === g.concierto_id)
-        if (concierto) conciertoMasCaro = { ...concierto, precio }
-      }
-    })
-
-    const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
-    const mesesCount = {}
-    conciertosPasados.forEach(c => {
-      const mes = new Date(c.fecha).getMonth()
-      mesesCount[mes] = (mesesCount[mes] || 0) + 1
-    })
-    let mesFavorito = null
-    let maxMes = 0
-    Object.entries(mesesCount).forEach(([mes, cant]) => {
-      if (cant > maxMes) {
-        maxMes = cant
-        mesFavorito = { nombre: meses[parseInt(mes)], cantidad: cant }
-      }
-    })
-
-    return {
-      totalConciertos, totalCiudades, totalInvertido,
-      anoMasActivo, maxConciertosAno,
-      datosPorAno, maxAno,
-      ranking, maxRanking, conciertero,
-      topCiudades, artistaTop, conciertoMasCaro, mesFavorito
+  useEffect(() => {
+    const handleClick = () => {
+      setMenuSubirId(null)
+      setMenuEditarId(null)
     }
-  }, [conciertos, amigos, asistentes, gastos])
+    document.addEventListener('click', handleClick)
+    return () => document.removeEventListener('click', handleClick)
+  }, [])
 
-  const formatEuro = (n) => new Intl.NumberFormat('es-ES', {
-    style: 'currency', currency: 'EUR',
-    minimumFractionDigits: 0, maximumFractionDigits: 0
-  }).format(n)
+  const cargarDatos = async () => {
+    const [a, g, t, h] = await Promise.all([
+      supabase.from('asistentes').select('*, amigos(nombre, iniciales, color, foto_url)').eq('concierto_id', concierto.id),
+      supabase.from('gastos').select('*, amigos(nombre, iniciales, color, foto_url)').eq('concierto_id', concierto.id),
+      supabase.from('transportes').select('*, amigos(nombre, iniciales, color, foto_url)').eq('concierto_id', concierto.id).single(),
+      supabase.from('hoteles').select('*, amigos(nombre, iniciales, color, foto_url)').eq('concierto_id', concierto.id).single(),
+    ])
+    setAsistentes(a.data || [])
+    setGastos(g.data || [])
+    setTransporte(t.data || null)
+    setHotel(h.data || null)
+    if (g.data && g.data.length > 0) {
+      const { data: p } = await supabase.from('pagos').select('*, amigos(nombre, iniciales, color, foto_url)').in('gasto_id', g.data.map(x => x.id))
+      setPagos(p || [])
+    } else {
+      setPagos([])
+    }
+  }
+
+  const compartirWhatsApp = () => {
+    const fecha = new Date(concierto.fecha).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+    const fechaCapitalizada = fecha.charAt(0).toUpperCase() + fecha.slice(1)
+    const mensaje = \`🎵 \${concierto.artista}\\n📅 \${fechaCapitalizada}\\n📍 \${concierto.recinto}, \${concierto.ciudad}\\n¡Apúntate en la app BOLOS GRUPI !!!\`
+    const url = \`https://wa.me/?text=\${encodeURIComponent(mensaje)}\`
+    window.open(url, '_blank')
+  }
+
+  const setEstadoAsistencia = async (amigoId, estado) => {
+    const existente = asistentes.find(a => a.amigo_id === amigoId)
+    if (estado === 'pendiente') {
+      if (existente) await supabase.from('asistentes').delete().eq('id', existente.id)
+    } else if (existente) {
+      await supabase.from('asistentes').update({ confirmado: estado === 'va' }).eq('id', existente.id)
+    } else {
+      await supabase.from('asistentes').insert([{ concierto_id: concierto.id, amigo_id: amigoId, confirmado: estado === 'va' }])
+    }
+    cargarDatos()
+    mostrarToast(estado === 'va' ? '¡Va al concierto!' : estado === 'nova' ? 'No va' : 'Pendiente de confirmar')
+  }
+
+  const getEstado = (amigoId) => {
+    const a = asistentes.find(a => a.amigo_id === amigoId)
+    if (!a) return 'pendiente'
+    return a.confirmado ? 'va' : 'nova'
+  }
+
+  const toggleReceptor = (amigoId) => {
+    setFormGasto(f => ({
+      ...f,
+      receptores: f.receptores.includes(amigoId)
+        ? f.receptores.filter(id => id !== amigoId)
+        : [...f.receptores, amigoId]
+    }))
+  }
+
+  const guardarGasto = async () => {
+    if (!formGasto.comprador_id || !formGasto.precio_entrada) { alert('Rellena comprador y precio'); return }
+    if (formGasto.receptores.length === 0) { alert('Selecciona al menos un amigo que recibió entrada'); return }
+    const totalPersonas = formGasto.receptores.length + 1
+    const { data: gasto } = await supabase.from('gastos').insert([{
+      concierto_id: concierto.id,
+      comprador_id: formGasto.comprador_id,
+      precio_entrada: parseFloat(formGasto.precio_entrada),
+      cantidad: totalPersonas,
+    }]).select().single()
+    if (gasto) {
+      const todosReceptores = [
+        { amigoId: formGasto.comprador_id, pagado: true },
+        ...formGasto.receptores.map(amigoId => ({ amigoId, pagado: false }))
+      ]
+      await supabase.from('pagos').insert(todosReceptores.map(r => ({
+        gasto_id: gasto.id,
+        pagador_id: r.amigoId,
+        cantidad: parseFloat(formGasto.precio_entrada),
+        pagado: r.pagado,
+      })))
+    }
+    setMostrarFormGasto(false)
+    setFormGasto({ comprador_id: '', precio_entrada: '', receptores: [] })
+    cargarDatos()
+    mostrarToast('Comprador registrado')
+  }
+
+  const guardarEdicionGasto = async () => {
+    if (!formEditarGasto.comprador_id || !formEditarGasto.precio_entrada) { alert('Rellena todos los campos'); return }
+    await supabase.from('gastos').update({
+      comprador_id: formEditarGasto.comprador_id,
+      precio_entrada: parseFloat(formEditarGasto.precio_entrada),
+    }).eq('id', gastoEditando.id)
+    setGastoEditando(null)
+    cargarDatos()
+    mostrarToast('Compra actualizada')
+  }
+
+  const togglePago = async (p) => {
+    await supabase.from('pagos').update({ pagado: !p.pagado }).eq('id', p.id)
+    cargarDatos()
+    mostrarToast(p.pagado ? 'Marcado como pendiente' : 'Pago confirmado')
+  }
+
+  const borrarGasto = async (id) => {
+    await supabase.from('gastos').delete().eq('id', id)
+    cargarDatos()
+    mostrarToast('Comprador eliminado')
+  }
+
+  const subirEntrada = async (gasto, archivo) => {
+    if (!archivo) return
+    mostrarToast('Subiendo entrada...')
+    const ext = archivo.type.includes('pdf') ? 'pdf' : archivo.name.split('.').pop() || 'jpg'
+    const path = gasto.id + '.' + ext
+    await supabase.storage.from('entradas-pdf').upload(path, archivo, { upsert: true })
+    const { data } = supabase.storage.from('entradas-pdf').getPublicUrl(path)
+    await supabase.from('gastos').update({ pdf_url: data.publicUrl + '?t=' + Date.now() }).eq('id', gasto.id)
+    cargarDatos()
+    mostrarToast('Entrada subida correctamente')
+  }
+
+  const pegarEntrada = async (gasto) => {
+    try {
+      const items = await navigator.clipboard.read()
+      for (const item of items) {
+        const imageType = item.types.find(t => t.startsWith('image/'))
+        if (imageType) {
+          const blob = await item.getType(imageType)
+          const ext = imageType.split('/')[1] || 'png'
+          const archivo = new File([blob], gasto.id + '.' + ext, { type: imageType })
+          await subirEntrada(gasto, archivo)
+          return
+        }
+      }
+      mostrarToast('No hay imagen en el portapapeles', 'error')
+    } catch {
+      mostrarToast('No se pudo acceder al portapapeles', 'error')
+    }
+  }
+
+  const borrarEntrada = async (gasto) => {
+    await supabase.from('gastos').update({ pdf_url: null }).eq('id', gasto.id)
+    cargarDatos()
+    mostrarToast('Entrada eliminada')
+  }
+
+  const iconTransporte = (tipo) => {
+    if (tipo === 'Avión') return '✈️'
+    if (tipo === 'Coche') return '🚗'
+    if (tipo === 'Autobús') return '🚌'
+    if (tipo === 'AVE') return '🚄'
+    return '🚆'
+  }
+
+  const totalPendiente = pagos.filter(p => !p.pagado).reduce((s, p) => s + Number(p.cantidad), 0)
+  const totalCobrado = pagos.filter(p => p.pagado && p.pagador_id !== gastos.find(g => g.id === p.gasto_id)?.comprador_id).reduce((s, p) => s + Number(p.cantidad), 0)
+  const totalGastado = gastos.reduce((s, g) => s + g.precio_entrada * g.cantidad, 0)
+  const van = amigos.filter(a => getEstado(a.id) === 'va')
+  const novan = amigos.filter(a => getEstado(a.id) === 'nova')
+  const pendientes = amigos.filter(a => getEstado(a.id) === 'pendiente')
+
+  const resumenPorAmigo = amigos.map(amigo => {
+    const deudas = pagos.filter(p => p.pagador_id === amigo.id && !p.pagado)
+    const pagados = pagos.filter(p => p.pagador_id === amigo.id && p.pagado && p.pagador_id !== gastos.find(g => g.id === p.gasto_id)?.comprador_id)
+    const totalDebe = deudas.reduce((s, p) => s + Number(p.cantidad), 0)
+    const detalleDeudas = deudas.map(p => {
+      const gasto = gastos.find(g => g.id === p.gasto_id)
+      const comprador = amigos.find(a => a.id === gasto?.comprador_id)
+      return { comprador, cantidad: Number(p.cantidad) }
+    })
+    return { amigo, totalDebe, detalleDeudas, pagados }
+  }).filter(r => r.totalDebe > 0 || r.pagados.length > 0)
 
   const card = {
-    background: 'var(--bg)', borderRadius: 20, padding: 18, marginBottom: 14,
+    background: 'var(--bg)', borderRadius: 18, padding: 16, marginBottom: 14,
     boxShadow: '6px 6px 12px var(--shadow-dark), -6px -6px 12px var(--shadow-light)',
   }
-  const tituloSeccion = {
-    margin: '0 0 16px', fontSize: 11, fontWeight: 700, color: 'var(--text-primary)',
-    letterSpacing: '0.25em', textTransform: 'uppercase',
-    display: 'flex', alignItems: 'center', gap: 8,
+  const inputNeu = {
+    width: '100%', padding: '11px 14px', borderRadius: 12, border: 'none',
+    background: 'var(--bg)',
+    boxShadow: 'inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light)',
+    fontSize: 14, color: 'var(--text-primary)', fontFamily: 'inherit', outline: 'none',
+  }
+  const labelNeu = {
+    fontSize: 10, color: 'var(--text-secondary)', display: 'block', marginBottom: 8,
+    fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase',
+  }
+  const tagNeu = {
+    padding: '4px 10px', borderRadius: 20, fontSize: 10, fontWeight: 700,
+    letterSpacing: '0.08em', textTransform: 'uppercase', border: 'none',
+    boxShadow: '2px 2px 4px var(--shadow-dark), -2px -2px 4px var(--shadow-light)',
+  }
+  const sageBtn = {
+    background: 'linear-gradient(145deg, var(--sage-light), var(--sage-dark))',
+    color: 'var(--warm-grey)', border: 'none', borderRadius: 14,
+    padding: '12px 18px', fontSize: 11, fontWeight: 700, cursor: 'pointer',
+    letterSpacing: '0.15em', textTransform: 'uppercase',
+    boxShadow: '4px 4px 8px var(--shadow-dark), -4px -4px 8px var(--shadow-light)',
+    fontFamily: 'inherit',
   }
 
   return (
-    <div style={{ maxWidth: 390, margin: '0 auto', background: 'var(--bg)', minHeight: '100vh', paddingBottom: 30 }}>
+    <div style={{ maxWidth: 390, margin: '0 auto', background: 'var(--bg)', minHeight: '100vh' }}>
 
+      {/* ENCABEZADO */}
       <div style={{
         background: 'linear-gradient(135deg, var(--warm-grey), #4A4137)',
-        padding: '18px 16px',
-        position: 'sticky', top: 0, zIndex: 10,
-        boxShadow: '0 6px 16px rgba(60,48,40,0.25)'
+        padding: '18px 20px',
+        boxShadow: '0 6px 16px rgba(60,48,40,0.25)',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <button onClick={onBack} style={{
-            background: 'rgba(245,239,230,0.12)', border: 'none', borderRadius: '50%',
-            width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: 'var(--sage-light)', cursor: 'pointer', fontFamily: 'inherit',
-          }}>
-            <ArrowLeft size={18} />
-          </button>
-          <div>
-            <h1 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--sage-light)', letterSpacing: '0.15em', textTransform: 'uppercase' }}>📊 Estadísticas</h1>
-            <p style={{ margin: '4px 0 0', fontSize: 9, color: 'rgba(245,239,230,0.55)', letterSpacing: '0.2em', textTransform: 'uppercase', fontWeight: 600 }}>Vuestra historia en números</p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+          <button onClick={onVolver} style={{
+            background: 'rgba(245,239,230,0.1)', border: 'none', color: 'var(--sage-light)',
+            fontSize: 22, cursor: 'pointer', padding: 0, width: 36, height: 36, borderRadius: '50%',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit',
+          }}>‹</button>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--sage-light)', letterSpacing: '0.04em' }}>{concierto.artista}</div>
+            <div style={{ fontSize: 11, color: 'rgba(245,239,230,0.55)', marginTop: 3, letterSpacing: '0.04em' }}>
+              {new Date(concierto.fecha).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} · {concierto.recinto}, {concierto.ciudad}
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button onClick={compartirWhatsApp} style={{
+              background: '#128C7E', border: 'none', color: 'white',
+              borderRadius: 10, padding: '6px 10px', fontSize: 10, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: 4, fontWeight: 700,
+              letterSpacing: '0.05em', fontFamily: 'inherit',
+            }}>📲 WA</button>
+            <button onClick={onEditar} style={{
+              background: 'rgba(245,239,230,0.1)', border: 'none', color: 'var(--sage-light)',
+              borderRadius: 10, padding: '6px 10px', fontSize: 10, cursor: 'pointer',
+              letterSpacing: '0.15em', textTransform: 'uppercase', fontWeight: 700, fontFamily: 'inherit',
+            }}>✏️</button>
           </div>
         </div>
+        <div style={{ display: 'flex', gap: 6 }}>
+          <span style={{
+            ...tagNeu,
+            background: concierto.estado === 'confirmado'
+              ? 'linear-gradient(145deg, var(--sage-light), var(--sage))'
+              : 'linear-gradient(145deg, var(--bg-light), var(--bg-dark))',
+            color: concierto.estado === 'confirmado' ? 'var(--warm-grey)' : 'var(--text-secondary)',
+          }}>{concierto.estado}</span>
+          {transporte && (
+            <button onClick={() => setFichaViaje('transporte')} style={{
+              ...tagNeu, cursor: 'pointer',
+              background: 'rgba(245,239,230,0.12)', color: 'var(--sage-light)',
+            }}>
+              {iconTransporte(transporte.tipo)} {transporte.tipo}
+            </button>
+          )}
+          {hotel && (
+            <button onClick={() => setFichaViaje('hotel')} style={{
+              ...tagNeu, cursor: 'pointer',
+              background: 'rgba(245,239,230,0.12)', color: 'var(--sage-light)',
+            }}>
+              🏨 {hotel.nombre || 'Hotel'}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* TABS */}
+      <div style={{ display: 'flex', background: 'var(--bg)', padding: '6px 12px', gap: 6 }}>
+        {['asistencia', 'entradas', 'setlist', 'fotos'].map(t => (
+          <button key={t} onClick={() => setSubtab(t)} style={{
+            flex: 1, padding: '10px 4px', fontSize: 9, fontWeight: 700,
+            background: subtab === t ? 'linear-gradient(145deg, var(--sage-light), var(--sage))' : 'transparent',
+            border: 'none', cursor: 'pointer', borderRadius: 12,
+            color: subtab === t ? 'var(--warm-grey)' : 'var(--text-secondary)',
+            letterSpacing: '0.1em', textTransform: 'uppercase',
+            boxShadow: subtab === t ? '3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light)' : 'none',
+            fontFamily: 'inherit', transition: 'all 0.15s',
+          }}>
+            {t === 'asistencia' ? '👋 Asist.' : t === 'entradas' ? '🎟 Entrad.' : t === 'setlist' ? '🎵 Setlist' : '📸 Fotos'}
+          </button>
+        ))}
       </div>
 
       <div style={{ padding: 16 }}>
 
-        {/* HERO STATS */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
-          <HeroCard icon={<Music2 size={14} />} valor={stats.totalConciertos} label='Conciertos' />
-          <HeroCard icon={<MapPin size={14} />} valor={stats.totalCiudades} label='Ciudades' />
-          <HeroCard icon={<Euro size={14} />} valor={formatEuro(stats.totalInvertido)} label='Invertido' isText />
-          <HeroCard icon={<Calendar size={14} />} valor={stats.anoMasActivo || '—'} label={stats.anoMasActivo ? stats.maxConciertosAno + ' conciertos' : 'Sin datos'} isText />
-        </div>
-
-        {/* GRÁFICA POR AÑO */}
-        {stats.datosPorAno.length > 0 && (
-          <div style={card}>
-            <h2 style={tituloSeccion}>
-              <TrendingUp size={14} />
-              Conciertos por año
-            </h2>
-            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', height: 160, padding: '8px 0', gap: 10 }}>
-              {stats.datosPorAno.map(({ ano, cantidad }) => {
-                const altura = stats.maxAno > 0 ? (cantidad / stats.maxAno) * 100 : 0
-                return (
-                  <div key={ano} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%' }}>
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', width: '100%' }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--sage-dark)', textAlign: 'center', marginBottom: 6 }}>
-                        {cantidad}
-                      </div>
-                      <div style={{
-                        background: 'linear-gradient(180deg, var(--sage), var(--sage-dark))',
-                        height: altura + '%',
-                        minHeight: cantidad > 0 ? 8 : 2,
-                        borderRadius: '6px 6px 0 0',
-                        transition: 'height 0.6s ease',
-                        boxShadow: '2px 2px 4px var(--shadow-dark)',
-                      }} />
-                    </div>
-                    <div style={{ fontSize: 10, color: 'var(--text-secondary)', marginTop: 8, fontWeight: 700, letterSpacing: '0.1em' }}>{ano}</div>
-                  </div>
-                )
-              })}
+        {/* TAB ASISTENCIA */}
+        {subtab === 'asistencia' && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 16 }}>
+              <div style={{ ...card, marginBottom: 0, padding: 12, textAlign: 'center', background: 'linear-gradient(145deg, var(--sage-light), var(--sage))' }}>
+                <div style={{ fontSize: 24, fontWeight: 300, color: 'var(--warm-grey)' }}>{van.length}</div>
+                <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--warm-grey)', letterSpacing: '0.2em', textTransform: 'uppercase', marginTop: 2 }}>Van</div>
+              </div>
+              <div style={{ ...card, marginBottom: 0, padding: 12, textAlign: 'center' }}>
+                <div style={{ fontSize: 24, fontWeight: 300, color: '#B85C5C' }}>{novan.length}</div>
+                <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.2em', textTransform: 'uppercase', marginTop: 2 }}>No van</div>
+              </div>
+              <div style={{ ...card, marginBottom: 0, padding: 12, textAlign: 'center' }}>
+                <div style={{ fontSize: 24, fontWeight: 300, color: 'var(--sage-dark)' }}>{pendientes.length}</div>
+                <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.2em', textTransform: 'uppercase', marginTop: 2 }}>Pdte.</div>
+              </div>
             </div>
-          </div>
-        )}
-
-        {/* RANKING */}
-        {stats.ranking.length > 0 && (
-          <div style={card}>
-            <h2 style={tituloSeccion}>
-              <Trophy size={14} />
-              Ranking de asistencia
-            </h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {stats.ranking.map((amigo, idx) => {
-                const porcentaje = stats.maxRanking > 0 ? (amigo.conciertos / stats.maxRanking) * 100 : 0
-                const medalla = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : null
-                return (
-                  <div key={amigo.id} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div style={{ width: 24, textAlign: 'center', fontSize: 16 }}>
-                      {medalla || <span style={{ color: 'var(--text-secondary)', fontSize: 12, fontWeight: 700 }}>{idx + 1}</span>}
-                    </div>
-                    <Avatar amigo={amigo} size={36} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 6, letterSpacing: '0.04em' }}>{amigo.nombre}</div>
-                      <div style={{
-                        height: 8, borderRadius: 4,
-                        background: 'var(--bg)',
-                        boxShadow: 'inset 2px 2px 4px var(--shadow-dark), inset -2px -2px 4px var(--shadow-light)',
-                        overflow: 'hidden',
-                      }}>
-                        <div style={{
-                          height: '100%',
-                          width: porcentaje + '%',
-                          background: amigo.color || 'var(--sage-dark)',
-                          borderRadius: 4,
-                          transition: 'width 0.6s ease',
-                        }} />
-                      </div>
-                    </div>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--sage-dark)', minWidth: 26, textAlign: 'right' }}>
-                      {amigo.conciertos}
-                    </div>
+            {amigos.map(a => {
+              const estado = getEstado(a.id)
+              return (
+              <div key={a.id} style={{
+                ...card,
+                padding: '14px 16px',
+                background: estado === 'va'
+                  ? 'linear-gradient(145deg, #D6DDCC, #C4CBB5)'
+                  : estado === 'nova'
+                  ? 'linear-gradient(145deg, #E8D8D8, #D8C6C6)'
+                  : 'var(--bg)',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <Avatar amigo={a} size={43} />
+                  <div style={{ flex: 1, fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '0.03em' }}>{a.nombre}</div>
+                  <div style={{ display: 'flex', gap: 5 }}>
+                    {['va', 'nova', 'pendiente'].map((est, i) => (
+                      <button key={est} onClick={() => setEstadoAsistencia(a.id, est)} style={{
+                        padding: '5px 10px', borderRadius: 20, border: 'none', fontSize: 10, fontWeight: 700, cursor: 'pointer',
+                        fontFamily: 'inherit',
+                        background: estado === est
+                          ? ['linear-gradient(145deg, var(--sage-light), var(--sage))', 'linear-gradient(145deg, #D8A0A0, #B87070)', 'linear-gradient(145deg, var(--bg-light), var(--bg-dark))'][i]
+                          : 'var(--bg)',
+                        color: estado === est
+                          ? ['var(--warm-grey)', '#fff', 'var(--text-secondary)'][i]
+                          : 'var(--text-secondary)',
+                        opacity: estado === est ? 1 : 0.4,
+                        boxShadow: estado === est
+                          ? '2px 2px 4px var(--shadow-dark), -2px -2px 4px var(--shadow-light)'
+                          : 'inset 1px 1px 3px var(--shadow-dark), inset -1px -1px 3px var(--shadow-light)',
+                      }}>{'✓✕?'[i]}</button>
+                    ))}
                   </div>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* TOP CIUDADES */}
-        {stats.topCiudades.length > 0 && (
-          <div style={card}>
-            <h2 style={tituloSeccion}>
-              <MapPin size={14} />
-              Ciudades visitadas
-            </h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {stats.topCiudades.map(({ ciudad, cantidad }, idx) => (
-                <div key={ciudad} style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '11px 14px',
-                  background: idx === 0
-                    ? 'linear-gradient(145deg, var(--sage-light), var(--sage))'
-                    : 'var(--bg)',
-                  borderRadius: 12,
-                  boxShadow: idx === 0
-                    ? '3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light)'
-                    : 'inset 2px 2px 4px var(--shadow-dark), inset -2px -2px 4px var(--shadow-light)',
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <span style={{ fontSize: 14 }}>📍</span>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: idx === 0 ? 'var(--warm-grey)' : 'var(--text-primary)', letterSpacing: '0.04em' }}>{ciudad}</span>
-                  </div>
-                  <span style={{
-                    fontSize: 11, fontWeight: 700,
-                    color: idx === 0 ? 'var(--warm-grey)' : 'var(--sage-dark)',
-                    letterSpacing: '0.05em',
-                  }}>
-                    {cantidad} {cantidad === 1 ? 'visita' : 'visitas'}
-                  </span>
                 </div>
-              ))}
-            </div>
+              </div>
+            )})}
           </div>
         )}
 
-        {/* CURIOSIDADES */}
-        <div style={card}>
-          <h2 style={tituloSeccion}>✨ Curiosidades del grupo</h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {/* TAB ENTRADAS */}
+        {subtab === 'entradas' && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 16 }}>
+              <div style={{ ...card, marginBottom: 0, padding: 12, textAlign: 'center' }}>
+                <div style={{ fontSize: 20, fontWeight: 300, color: 'var(--sage-dark)' }}>{totalGastado.toFixed(2)}€</div>
+                <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.2em', textTransform: 'uppercase', marginTop: 2 }}>Total</div>
+              </div>
+              <div style={{ ...card, marginBottom: 0, padding: 12, textAlign: 'center' }}>
+                <div style={{ fontSize: 20, fontWeight: 300, color: '#B85C5C' }}>{totalPendiente.toFixed(2)}€</div>
+                <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.2em', textTransform: 'uppercase', marginTop: 2 }}>Pendiente</div>
+              </div>
+              <div style={{ ...card, marginBottom: 0, padding: 12, textAlign: 'center', background: 'linear-gradient(145deg, var(--sage-light), var(--sage))' }}>
+                <div style={{ fontSize: 20, fontWeight: 300, color: 'var(--warm-grey)' }}>{totalCobrado.toFixed(2)}€</div>
+                <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--warm-grey)', letterSpacing: '0.2em', textTransform: 'uppercase', marginTop: 2 }}>Cobrado</div>
+              </div>
+            </div>
 
-            {stats.artistaTop && (
-              <CuriosidadCard
-                emoji='🎤'
-                titulo='Artista más visto'
-                valor={stats.artistaTop[0]}
-                detalle={stats.artistaTop[1] + ' ' + (stats.artistaTop[1] === 1 ? 'concierto' : 'conciertos')}
-              />
+            {gastos.length > 0 && (
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 10, letterSpacing: '0.25em', textTransform: 'uppercase' }}>Quién compró</div>
+                {gastos.map(g => {
+                  const pagosGasto = pagos.filter(p => p.gasto_id === g.id)
+                  const pendientesG = pagosGasto.filter(p => !p.pagado)
+                  const cobradosG = pagosGasto.filter(p => p.pagado && p.pagador_id !== g.comprador_id)
+                  return (
+                    <div key={g.id} style={card}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: pendientesG.length + cobradosG.length > 0 ? 12 : 0 }}>
+                        <Avatar amigo={g.amigos} size={43} />
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '0.03em' }}>{g.amigos?.nombre} compró</div>
+                          <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2, letterSpacing: '0.03em' }}>{g.cantidad} entrada{g.cantidad > 1 ? 's' : ''} · {Number(g.precio_entrada).toFixed(2)}€ c/u · <span style={{ fontWeight: 700, color: 'var(--sage-dark)' }}>{(g.precio_entrada * g.cantidad).toFixed(2)}€ total</span></div>
+                        </div>
+                        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }} onClick={e => e.stopPropagation()}>
+                          {g.pdf_url ? (
+                            <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                              <button onClick={() => window.open(g.pdf_url, '_blank')} style={{
+                                background: 'linear-gradient(145deg, var(--sage-light), var(--sage))',
+                                border: 'none', borderRadius: 10,
+                                padding: '5px 10px', fontSize: 10, color: 'var(--warm-grey)', cursor: 'pointer', fontWeight: 700,
+                                letterSpacing: '0.05em', fontFamily: 'inherit',
+                                boxShadow: '2px 2px 4px var(--shadow-dark), -2px -2px 4px var(--shadow-light)',
+                              }}>📄 Ver</button>
+                              <button onClick={() => borrarEntrada(g)} style={{
+                                background: 'none', border: 'none', fontSize: 12, color: 'var(--text-secondary)', cursor: 'pointer'
+                              }}>✕</button>
+                            </div>
+                          ) : (
+                            <div style={{ position: 'relative' }}>
+                              <button
+                                onClick={() => setMenuSubirId(menuSubirId === g.id ? null : g.id)}
+                                style={{
+                                  background: 'var(--bg)', border: 'none', borderRadius: 10,
+                                  padding: '5px 10px', fontSize: 10, color: 'var(--text-secondary)', cursor: 'pointer',
+                                  display: 'flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap',
+                                  fontWeight: 700, fontFamily: 'inherit',
+                                  boxShadow: '2px 2px 4px var(--shadow-dark), -2px -2px 4px var(--shadow-light)',
+                                }}>🎟 Subir ▾</button>
+                              {menuSubirId === g.id && (
+                                <div style={{
+                                  position: 'absolute', top: '110%', right: 0, zIndex: 100,
+                                  background: 'var(--bg)', borderRadius: 14,
+                                  boxShadow: '8px 8px 20px var(--shadow-dark), -8px -8px 20px var(--shadow-light)',
+                                  minWidth: 165, overflow: 'hidden'
+                                }}>
+                                  <label style={{
+                                    width: '100%', padding: '12px 16px',
+                                    display: 'flex', alignItems: 'center', gap: 8,
+                                    fontSize: 12, cursor: 'pointer', boxSizing: 'border-box',
+                                    color: 'var(--text-primary)', fontWeight: 600,
+                                  }}>
+                                    📎 Subir archivo
+                                    <input type='file' accept='application/pdf,image/*' style={{ display: 'none' }}
+                                      onChange={e => { subirEntrada(g, e.target.files[0]); setMenuSubirId(null) }} />
+                                  </label>
+                                  <div style={{ height: 1, background: 'var(--bg-dark)' }} />
+                                  <button onClick={() => { pegarEntrada(g); setMenuSubirId(null) }}
+                                    style={{
+                                      width: '100%', padding: '12px 16px', textAlign: 'left',
+                                      background: 'none', border: 'none', fontSize: 12, cursor: 'pointer',
+                                      display: 'flex', alignItems: 'center', gap: 8,
+                                      color: 'var(--text-primary)', fontWeight: 600, fontFamily: 'inherit',
+                                    }}>📋 Pegar imagen</button>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          <div style={{ position: 'relative' }}>
+                            <button
+                              onClick={() => setMenuEditarId(menuEditarId === g.id ? null : g.id)}
+                              style={{
+                                background: 'var(--bg)', border: 'none', borderRadius: 10,
+                                padding: '5px 10px', fontSize: 10, color: 'var(--text-secondary)', cursor: 'pointer',
+                                whiteSpace: 'nowrap', fontWeight: 700, fontFamily: 'inherit',
+                                boxShadow: '2px 2px 4px var(--shadow-dark), -2px -2px 4px var(--shadow-light)',
+                              }}>✏️ ▾</button>
+                            {menuEditarId === g.id && (
+                              <div style={{
+                                position: 'absolute', top: '110%', right: 0, zIndex: 100,
+                                background: 'var(--bg)', borderRadius: 14,
+                                boxShadow: '8px 8px 20px var(--shadow-dark), -8px -8px 20px var(--shadow-light)',
+                                minWidth: 165, overflow: 'hidden'
+                              }}>
+                                <button
+                                  onClick={() => {
+                                    setFormEditarGasto({ comprador_id: g.comprador_id, precio_entrada: g.precio_entrada })
+                                    setGastoEditando(g)
+                                    setMenuEditarId(null)
+                                  }}
+                                  style={{
+                                    width: '100%', padding: '12px 16px', textAlign: 'left',
+                                    background: 'none', border: 'none', fontSize: 12, cursor: 'pointer',
+                                    display: 'flex', alignItems: 'center', gap: 8,
+                                    color: 'var(--text-primary)', fontWeight: 600, fontFamily: 'inherit',
+                                  }}>✏️ Modificar</button>
+                                <div style={{ height: 1, background: 'var(--bg-dark)' }} />
+                                <button
+                                  onClick={() => {
+                                    if (confirm('¿Eliminar esta compra y todos sus pagos?')) {
+                                      borrarGasto(g.id)
+                                      setMenuEditarId(null)
+                                    }
+                                  }}
+                                  style={{
+                                    width: '100%', padding: '12px 16px', textAlign: 'left',
+                                    background: 'none', border: 'none', fontSize: 12,
+                                    color: '#B85C5C', cursor: 'pointer', fontWeight: 600,
+                                    display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'inherit',
+                                  }}>🗑️ Eliminar</button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {pendientesG.length > 0 && (
+                        <div style={{ marginBottom: 8 }}>
+                          <div style={{ fontSize: 9, color: '#B85C5C', marginBottom: 8, fontWeight: 700, letterSpacing: '0.25em', textTransform: 'uppercase' }}>Deben pagar a {g.amigos?.nombre}</div>
+                          {pendientesG.map(p => (
+                            <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                              <Avatar amigo={p.amigos} size={32} />
+                              <span style={{ fontSize: 13, flex: 1, fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '0.03em' }}>{p.amigos?.nombre}</span>
+                              <span style={{ fontSize: 12, color: '#B85C5C', fontWeight: 700 }}>{Number(p.cantidad).toFixed(2)}€</span>
+                              <button onClick={() => togglePago(p)} style={{
+                                padding: '4px 12px', borderRadius: 20, border: 'none',
+                                background: 'linear-gradient(145deg, #E8D8D8, #D8C6C6)',
+                                color: '#8B4444', fontSize: 10, fontWeight: 700, cursor: 'pointer',
+                                letterSpacing: '0.08em', fontFamily: 'inherit',
+                                boxShadow: '2px 2px 4px var(--shadow-dark), -2px -2px 4px var(--shadow-light)',
+                              }}>Pendiente</button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {cobradosG.length > 0 && (
+                        <div>
+                          <div style={{ fontSize: 9, color: 'var(--sage-dark)', marginBottom: 8, fontWeight: 700, letterSpacing: '0.25em', textTransform: 'uppercase' }}>Ya pagaron</div>
+                          {cobradosG.map(p => (
+                            <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, opacity: 0.6 }}>
+                              <Avatar amigo={p.amigos} size={32} />
+                              <span style={{ fontSize: 13, flex: 1, fontWeight: 600, color: 'var(--text-primary)' }}>{p.amigos?.nombre}</span>
+                              <span style={{ fontSize: 12, color: 'var(--sage-dark)', fontWeight: 700 }}>{Number(p.cantidad).toFixed(2)}€</span>
+                              <button onClick={() => togglePago(p)} style={{
+                                padding: '4px 12px', borderRadius: 20, border: 'none',
+                                background: 'linear-gradient(145deg, var(--sage-light), var(--sage))',
+                                color: 'var(--warm-grey)', fontSize: 10, fontWeight: 700, cursor: 'pointer',
+                                letterSpacing: '0.08em', fontFamily: 'inherit',
+                                boxShadow: '2px 2px 4px var(--shadow-dark), -2px -2px 4px var(--shadow-light)',
+                              }}>✓ Pagado</button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
             )}
 
-            {stats.conciertoMasCaro && (
-              <CuriosidadCard
-                emoji='🎟'
-                titulo='Entrada más cara'
-                valor={stats.conciertoMasCaro.artista}
-                detalle={formatEuro(stats.conciertoMasCaro.precio) + ' · ' + (stats.conciertoMasCaro.ciudad || '')}
-              />
+            {resumenPorAmigo.length > 0 && (
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 10, letterSpacing: '0.25em', textTransform: 'uppercase' }}>Resumen por amigo</div>
+                {resumenPorAmigo.map(({ amigo, totalDebe, detalleDeudas }) => (
+                  <div key={amigo.id} style={{
+                    ...card,
+                    background: totalDebe > 0
+                      ? 'linear-gradient(145deg, #E8D8D8, #D8C6C6)'
+                      : 'linear-gradient(145deg, var(--sage-light), var(--sage))',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <Avatar amigo={amigo} size={38} />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: totalDebe > 0 ? '#6B3333' : 'var(--warm-grey)', letterSpacing: '0.03em' }}>{amigo.nombre}</div>
+                        {totalDebe > 0 && detalleDeudas.map((d, i) => (
+                          <div key={i} style={{ fontSize: 11, color: '#8B4444', marginTop: 3 }}>
+                            Debe {d.cantidad.toFixed(2)}€ a {d.comprador?.nombre}
+                          </div>
+                        ))}
+                        {totalDebe === 0 && <div style={{ fontSize: 11, color: 'var(--warm-grey)', marginTop: 3, fontWeight: 600 }}>Todo pagado ✓</div>}
+                      </div>
+                      {totalDebe > 0 && <div style={{ fontSize: 16, fontWeight: 700, color: '#8B4444' }}>{totalDebe.toFixed(2)}€</div>}
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
 
-            {stats.mesFavorito && (
-              <CuriosidadCard
-                emoji='📅'
-                titulo='Mes favorito del grupo'
-                valor={stats.mesFavorito.nombre}
-                detalle={stats.mesFavorito.cantidad + ' ' + (stats.mesFavorito.cantidad === 1 ? 'concierto' : 'conciertos') + ' en este mes'}
-              />
+            {!mostrarFormGasto && (
+              <button onClick={() => setMostrarFormGasto(true)} style={{
+                ...sageBtn, width: '100%', padding: 14, borderRadius: 16, marginTop: 8,
+                fontSize: 10,
+              }}>+ Registrar quién compró</button>
             )}
 
-            {stats.conciertero && (
-              <CuriosidadCard
-                emoji='🏆'
-                titulo='El concertero del grupo'
-                valor={stats.conciertero.nombre}
-                detalle={stats.conciertero.conciertos + ' ' + (stats.conciertero.conciertos === 1 ? 'concierto' : 'conciertos') + ' a sus espaldas'}
-              />
-            )}
-
-            {stats.totalConciertos === 0 && (
-              <div style={{ padding: 22, textAlign: 'center', color: 'var(--text-secondary)', fontSize: 13, letterSpacing: '0.04em' }}>
-                Aún no hay conciertos pasados registrados.<br />
-                ¡Vamos a por el primero! 🎸
+            {mostrarFormGasto && (
+              <div style={{ ...card, padding: 20, marginTop: 8 }}>
+                <div style={{ ...labelNeu, color: 'var(--sage-dark)', marginBottom: 16 }}>¿Quién compró las entradas?</div>
+                <div style={{ marginBottom: 14 }}>
+                  <label style={labelNeu}>Comprador</label>
+                  <select value={formGasto.comprador_id} onChange={e => setFormGasto(f => ({ ...f, comprador_id: e.target.value, receptores: [] }))}
+                    style={inputNeu}>
+                    <option value=''>— Selecciona —</option>
+                    {amigos.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+                  </select>
+                </div>
+                <div style={{ marginBottom: 14 }}>
+                  <label style={labelNeu}>Precio por entrada (€)</label>
+                  <input type='number' value={formGasto.precio_entrada} onChange={e => setFormGasto(f => ({ ...f, precio_entrada: e.target.value }))}
+                    placeholder='Ej: 37.40' step='0.01' style={inputNeu} />
+                </div>
+                {formGasto.comprador_id && (
+                  <div style={{ marginBottom: 18 }}>
+                    <label style={labelNeu}>
+                      ¿A quién le dio entradas? <span style={{ color: 'var(--sage-dark)' }}>({formGasto.receptores.length})</span>
+                    </label>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {amigos.map(a => {
+                        const esComprador = a.id === formGasto.comprador_id
+                        const seleccionado = esComprador || formGasto.receptores.includes(a.id)
+                        return (
+                          <div key={a.id} onClick={() => !esComprador && toggleReceptor(a.id)} style={{
+                            display: 'flex', alignItems: 'center', gap: 12,
+                            padding: '10px 14px', borderRadius: 14, cursor: esComprador ? 'default' : 'pointer',
+                            background: esComprador
+                              ? 'linear-gradient(145deg, var(--sage-light), var(--sage))'
+                              : seleccionado
+                              ? 'linear-gradient(145deg, var(--bg-light), var(--bg-dark))'
+                              : 'var(--bg)',
+                            boxShadow: seleccionado
+                              ? '3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light)'
+                              : 'inset 2px 2px 4px var(--shadow-dark), inset -2px -2px 4px var(--shadow-light)',
+                          }}>
+                            <Avatar amigo={a} size={36} />
+                            <span style={{ fontSize: 13, flex: 1, fontWeight: 700, color: esComprador ? 'var(--warm-grey)' : seleccionado ? 'var(--text-primary)' : 'var(--text-secondary)', letterSpacing: '0.03em' }}>{a.nombre}</span>
+                            {esComprador
+                              ? <span style={{ fontSize: 9, color: 'var(--warm-grey)', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase' }}>Comprador ✓</span>
+                              : <span style={{ fontSize: 16, color: seleccionado ? 'var(--sage-dark)' : 'var(--text-secondary)', opacity: seleccionado ? 1 : 0.3 }}>{seleccionado ? '✓' : '○'}</span>
+                            }
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <button onClick={() => { setMostrarFormGasto(false); setFormGasto({ comprador_id: '', precio_entrada: '', receptores: [] }) }}
+                    style={{
+                      flex: 1, padding: 12, borderRadius: 14, border: 'none',
+                      background: 'var(--bg)', color: 'var(--text-secondary)',
+                      fontSize: 11, fontWeight: 700, fontFamily: 'inherit',
+                      letterSpacing: '0.15em', textTransform: 'uppercase',
+                      boxShadow: '3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light)',
+                    }}>Cancelar</button>
+                  <button onClick={guardarGasto} style={{ ...sageBtn, flex: 1, padding: 12, borderRadius: 14, fontSize: 11 }}>Guardar</button>
+                </div>
               </div>
             )}
           </div>
-        </div>
+        )}
+
+        {/* TAB SETLIST */}
+        {subtab === 'setlist' && (
+          <Setlist concierto={concierto} onActualizado={() => {}} />
+        )}
+        {subtab === 'fotos' && (
+          <Album concierto={concierto} amigos={amigos} />
+        )}
 
       </div>
-    </div>
-  )
-}
 
-function HeroCard({ icon, valor, label, isText }) {
-  return (
-    <div style={{
-      background: 'var(--bg)', borderRadius: 18, padding: 14,
-      boxShadow: '6px 6px 12px var(--shadow-dark), -6px -6px 12px var(--shadow-light)',
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--sage-dark)', marginBottom: 8 }}>
-        {icon}
-        <span style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.2em' }}>
-          {label}
-        </span>
-      </div>
-      <div style={{
-        fontSize: isText ? 18 : 26,
-        fontWeight: 300,
-        color: 'var(--sage-dark)',
-        lineHeight: 1.1,
-        letterSpacing: '0.02em',
-      }}>
-        {valor}
-      </div>
-    </div>
-  )
-}
-
-function CuriosidadCard({ emoji, titulo, valor, detalle }) {
-  return (
-    <div style={{
-      display: 'flex', alignItems: 'center', gap: 14,
-      padding: 14,
-      background: 'var(--bg)',
-      borderRadius: 14,
-      boxShadow: 'inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light)',
-    }}>
-      <div style={{
-        fontSize: 22, width: 44, height: 44,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: 'linear-gradient(145deg, var(--sage-light), var(--sage))',
-        borderRadius: '50%',
-        boxShadow: '3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light)',
-        flexShrink: 0,
-      }}>
-        {emoji}
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 9, color: 'var(--text-secondary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.22em' }}>
-          {titulo}
-        </div>
+      {/* MODAL EDITAR GASTO */}
+      {gastoEditando && (
         <div style={{
-          fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', marginTop: 4,
-          letterSpacing: '0.04em',
-          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
+          position: 'fixed', inset: 0, background: 'rgba(60,48,40,0.5)', zIndex: 200,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20,
+          backdropFilter: 'blur(4px)',
         }}>
-          {valor}
+          <div style={{
+            background: 'var(--bg)', borderRadius: 22, padding: 22, width: '100%', maxWidth: 360,
+            boxShadow: '12px 12px 24px var(--shadow-dark), -12px -12px 24px var(--shadow-light)',
+          }}>
+            <div style={{ ...labelNeu, color: 'var(--sage-dark)', marginBottom: 18 }}>✏️ Modificar compra</div>
+            <div style={{ marginBottom: 14 }}>
+              <label style={labelNeu}>¿Quién compró?</label>
+              <select value={formEditarGasto.comprador_id} onChange={e => setFormEditarGasto(f => ({ ...f, comprador_id: e.target.value }))}
+                style={inputNeu}>
+                <option value=''>— Selecciona —</option>
+                {amigos.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+              </select>
+            </div>
+            <div style={{ marginBottom: 18 }}>
+              <label style={labelNeu}>Precio por entrada (€)</label>
+              <input type='number' value={formEditarGasto.precio_entrada} step='0.01'
+                onChange={e => setFormEditarGasto(f => ({ ...f, precio_entrada: e.target.value }))}
+                style={inputNeu} />
+            </div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button onClick={() => setGastoEditando(null)}
+                style={{
+                  flex: 1, padding: 12, borderRadius: 14, border: 'none',
+                  background: 'var(--bg)', color: 'var(--text-secondary)',
+                  fontSize: 11, fontWeight: 700, fontFamily: 'inherit',
+                  letterSpacing: '0.15em', textTransform: 'uppercase',
+                  boxShadow: '3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light)',
+                }}>Cancelar</button>
+              <button onClick={guardarEdicionGasto} style={{ ...sageBtn, flex: 1, padding: 12, borderRadius: 14, fontSize: 11 }}>Guardar</button>
+            </div>
+          </div>
         </div>
-        <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 3, letterSpacing: '0.03em' }}>{detalle}</div>
-      </div>
+      )}
+
+      {fichaViaje && (
+        <FichaViaje
+          tipo={fichaViaje}
+          datos={fichaViaje === 'transporte' ? transporte : hotel}
+          amigos={amigos}
+          conciertoId={concierto.id}
+          onCerrar={() => setFichaViaje(null)}
+          onActualizado={() => { setFichaViaje(null); cargarDatos() }}
+        />
+      )}
+      {toast && <Toast mensaje={toast.mensaje} tipo={toast.tipo} onClose={() => setToast(null)} />}
     </div>
   )
 }
 `
 
-writeFileSync('src/components/EstadisticasGrupo.jsx', estadisticasCode)
-console.log('✔ src/components/EstadisticasGrupo.jsx actualizado (Fase 3C)')
+writeFileSync('src/components/FichaConcierto.jsx', code)
+console.log('✔ src/components/FichaConcierto.jsx actualizado (Fase 4)')

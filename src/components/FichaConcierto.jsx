@@ -17,8 +17,6 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
   const [fichaViaje, setFichaViaje] = useState(null)
   const [formGasto, setFormGasto] = useState({ comprador_id: '', precio_entrada: '', receptores: [] })
   const [toast, setToast] = useState(null)
-
-  // ESTADOS DROPDOWN Y EDICIÓN
   const [menuSubirId, setMenuSubirId] = useState(null)
   const [menuEditarId, setMenuEditarId] = useState(null)
   const [gastoEditando, setGastoEditando] = useState(null)
@@ -207,44 +205,90 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
     return { amigo, totalDebe, detalleDeudas, pagados }
   }).filter(r => r.totalDebe > 0 || r.pagados.length > 0)
 
+  const card = {
+    background: 'var(--bg)', borderRadius: 18, padding: 16, marginBottom: 14,
+    boxShadow: '6px 6px 12px var(--shadow-dark), -6px -6px 12px var(--shadow-light)',
+  }
+  const inputNeu = {
+    width: '100%', padding: '11px 14px', borderRadius: 12, border: 'none',
+    background: 'var(--bg)',
+    boxShadow: 'inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light)',
+    fontSize: 14, color: 'var(--text-primary)', fontFamily: 'inherit', outline: 'none',
+  }
+  const labelNeu = {
+    fontSize: 10, color: 'var(--text-secondary)', display: 'block', marginBottom: 8,
+    fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase',
+  }
+  const tagNeu = {
+    padding: '4px 10px', borderRadius: 20, fontSize: 10, fontWeight: 700,
+    letterSpacing: '0.08em', textTransform: 'uppercase', border: 'none',
+    boxShadow: '2px 2px 4px var(--shadow-dark), -2px -2px 4px var(--shadow-light)',
+  }
+  const sageBtn = {
+    background: 'linear-gradient(145deg, var(--sage-light), var(--sage-dark))',
+    color: 'var(--warm-grey)', border: 'none', borderRadius: 14,
+    padding: '12px 18px', fontSize: 11, fontWeight: 700, cursor: 'pointer',
+    letterSpacing: '0.15em', textTransform: 'uppercase',
+    boxShadow: '4px 4px 8px var(--shadow-dark), -4px -4px 8px var(--shadow-light)',
+    fontFamily: 'inherit',
+  }
+
   return (
-    <div style={{ maxWidth: 390, margin: '0 auto', background: 'white', minHeight: '100vh' }}>
+    <div style={{ maxWidth: 390, margin: '0 auto', background: 'var(--bg)', minHeight: '100vh' }}>
 
       {/* ENCABEZADO */}
-      <div style={{ background: '#1a1a2e', padding: '16px 20px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
-          <button onClick={onVolver} style={{ background: 'none', border: 'none', color: 'white', fontSize: 22, cursor: 'pointer', padding: 0 }}>‹</button>
+      <div style={{
+        background: 'linear-gradient(135deg, var(--warm-grey), #4A4137)',
+        padding: '18px 20px',
+        boxShadow: '0 6px 16px rgba(60,48,40,0.25)',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+          <button onClick={onVolver} style={{
+            background: 'rgba(245,239,230,0.1)', border: 'none', color: 'var(--sage-light)',
+            fontSize: 22, cursor: 'pointer', padding: 0, width: 36, height: 36, borderRadius: '50%',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit',
+          }}>‹</button>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 18, fontWeight: 500, color: 'white' }}>{concierto.artista}</div>
-            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)' }}>
+            <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--sage-light)', letterSpacing: '0.04em' }}>{concierto.artista}</div>
+            <div style={{ fontSize: 11, color: 'rgba(245,239,230,0.55)', marginTop: 3, letterSpacing: '0.04em' }}>
               {new Date(concierto.fecha).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} · {concierto.recinto}, {concierto.ciudad}
             </div>
           </div>
           <div style={{ display: 'flex', gap: 6 }}>
             <button onClick={compartirWhatsApp} style={{
               background: '#128C7E', border: 'none', color: 'white',
-              borderRadius: 8, padding: '4px 10px', fontSize: 12, cursor: 'pointer',
-              display: 'flex', alignItems: 'center', gap: 4, fontWeight: 500
-            }}>
-              📲 WhatsApp
-            </button>
+              borderRadius: 10, padding: '6px 10px', fontSize: 10, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: 4, fontWeight: 700,
+              letterSpacing: '0.05em', fontFamily: 'inherit',
+            }}>📲 WA</button>
             <button onClick={onEditar} style={{
-              background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white',
-              borderRadius: 8, padding: '4px 10px', fontSize: 12, cursor: 'pointer'
-            }}>
-              ✏️ Editar
-            </button>
+              background: 'rgba(245,239,230,0.1)', border: 'none', color: 'var(--sage-light)',
+              borderRadius: 10, padding: '6px 10px', fontSize: 10, cursor: 'pointer',
+              letterSpacing: '0.15em', textTransform: 'uppercase', fontWeight: 700, fontFamily: 'inherit',
+            }}>✏️</button>
           </div>
         </div>
         <div style={{ display: 'flex', gap: 6 }}>
-          <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 500, background: concierto.estado === 'confirmado' ? '#EAF3DE' : '#FAEEDA', color: concierto.estado === 'confirmado' ? '#27500A' : '#633806' }}>{concierto.estado}</span>
+          <span style={{
+            ...tagNeu,
+            background: concierto.estado === 'confirmado'
+              ? 'linear-gradient(145deg, var(--sage-light), var(--sage))'
+              : 'linear-gradient(145deg, var(--bg-light), var(--bg-dark))',
+            color: concierto.estado === 'confirmado' ? 'var(--warm-grey)' : 'var(--text-secondary)',
+          }}>{concierto.estado}</span>
           {transporte && (
-            <button onClick={() => setFichaViaje('transporte')} style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 500, background: '#EEEDFE', color: '#3C3489', border: 'none', cursor: 'pointer' }}>
+            <button onClick={() => setFichaViaje('transporte')} style={{
+              ...tagNeu, cursor: 'pointer',
+              background: 'rgba(245,239,230,0.12)', color: 'var(--sage-light)',
+            }}>
               {iconTransporte(transporte.tipo)} {transporte.tipo}
             </button>
           )}
           {hotel && (
-            <button onClick={() => setFichaViaje('hotel')} style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 500, background: '#E1F5EE', color: '#085041', border: 'none', cursor: 'pointer' }}>
+            <button onClick={() => setFichaViaje('hotel')} style={{
+              ...tagNeu, cursor: 'pointer',
+              background: 'rgba(245,239,230,0.12)', color: 'var(--sage-light)',
+            }}>
               🏨 {hotel.nombre || 'Hotel'}
             </button>
           )}
@@ -252,15 +296,18 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
       </div>
 
       {/* TABS */}
-      <div style={{ display: 'flex', borderBottom: '0.5px solid #eee', background: 'white' }}>
+      <div style={{ display: 'flex', background: 'var(--bg)', padding: '6px 12px', gap: 6 }}>
         {['asistencia', 'entradas', 'setlist', 'fotos'].map(t => (
           <button key={t} onClick={() => setSubtab(t)} style={{
-            flex: 1, padding: '10px 4px', fontSize: 11, fontWeight: 500,
-            background: 'none', border: 'none', cursor: 'pointer',
-            borderBottom: subtab === t ? '2px solid #7F77DD' : '2px solid transparent',
-            color: subtab === t ? '#7F77DD' : '#888',
+            flex: 1, padding: '10px 4px', fontSize: 9, fontWeight: 700,
+            background: subtab === t ? 'linear-gradient(145deg, var(--sage-light), var(--sage))' : 'transparent',
+            border: 'none', cursor: 'pointer', borderRadius: 12,
+            color: subtab === t ? 'var(--warm-grey)' : 'var(--text-secondary)',
+            letterSpacing: '0.1em', textTransform: 'uppercase',
+            boxShadow: subtab === t ? '3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light)' : 'none',
+            fontFamily: 'inherit', transition: 'all 0.15s',
           }}>
-            {t === 'asistencia' ? '👋 Asistencia' : t === 'entradas' ? '🎟 Entradas' : t === 'setlist' ? '🎵 Setlist' : '📸 Fotos'}
+            {t === 'asistencia' ? '👋 Asist.' : t === 'entradas' ? '🎟 Entrad.' : t === 'setlist' ? '🎵 Setlist' : '📸 Fotos'}
           </button>
         ))}
       </div>
@@ -270,90 +317,104 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
         {/* TAB ASISTENCIA */}
         {subtab === 'asistencia' && (
           <div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 16 }}>
-              <div style={{ background: '#EAF3DE', borderRadius: 10, padding: 10, textAlign: 'center' }}>
-                <div style={{ fontSize: 22, fontWeight: 500, color: '#27500A' }}>{van.length}</div>
-                <div style={{ fontSize: 10, color: '#3B6D11' }}>Van</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 16 }}>
+              <div style={{ ...card, marginBottom: 0, padding: 12, textAlign: 'center', background: 'linear-gradient(145deg, var(--sage-light), var(--sage))' }}>
+                <div style={{ fontSize: 24, fontWeight: 300, color: 'var(--warm-grey)' }}>{van.length}</div>
+                <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--warm-grey)', letterSpacing: '0.2em', textTransform: 'uppercase', marginTop: 2 }}>Van</div>
               </div>
-              <div style={{ background: '#FCEBEB', borderRadius: 10, padding: 10, textAlign: 'center' }}>
-                <div style={{ fontSize: 22, fontWeight: 500, color: '#791F1F' }}>{novan.length}</div>
-                <div style={{ fontSize: 10, color: '#A32D2D' }}>No van</div>
+              <div style={{ ...card, marginBottom: 0, padding: 12, textAlign: 'center' }}>
+                <div style={{ fontSize: 24, fontWeight: 300, color: '#B85C5C' }}>{novan.length}</div>
+                <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.2em', textTransform: 'uppercase', marginTop: 2 }}>No van</div>
               </div>
-              <div style={{ background: '#FAEEDA', borderRadius: 10, padding: 10, textAlign: 'center' }}>
-                <div style={{ fontSize: 22, fontWeight: 500, color: '#633806' }}>{pendientes.length}</div>
-                <div style={{ fontSize: 10, color: '#854F0B' }}>Pendientes</div>
+              <div style={{ ...card, marginBottom: 0, padding: 12, textAlign: 'center' }}>
+                <div style={{ fontSize: 24, fontWeight: 300, color: 'var(--sage-dark)' }}>{pendientes.length}</div>
+                <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.2em', textTransform: 'uppercase', marginTop: 2 }}>Pdte.</div>
               </div>
             </div>
-            {amigos.map(a => (
+            {amigos.map(a => {
+              const estado = getEstado(a.id)
+              return (
               <div key={a.id} style={{
-                borderRadius: 12, padding: '12px 14px', marginBottom: 8, border: '1px solid #eee',
-                background: getEstado(a.id) === 'va' ? '#EAF3DE' : getEstado(a.id) === 'nova' ? '#FCEBEB' : 'white',
-                borderLeft: `3px solid ${getEstado(a.id) === 'va' ? '#639922' : getEstado(a.id) === 'nova' ? '#E24B4A' : '#FAC775'}`
+                ...card,
+                padding: '14px 16px',
+                background: estado === 'va'
+                  ? 'linear-gradient(145deg, #D6DDCC, #C4CBB5)'
+                  : estado === 'nova'
+                  ? 'linear-gradient(145deg, #E8D8D8, #D8C6C6)'
+                  : 'var(--bg)',
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <Avatar amigo={a} size={41} />
-                  <div style={{ flex: 1, fontSize: 14, fontWeight: 500 }}>{a.nombre}</div>
-                  <div style={{ display: 'flex', gap: 4 }}>
-                    {['va', 'nova', 'pendiente'].map((estado, i) => (
-                      <button key={estado} onClick={() => setEstadoAsistencia(a.id, estado)} style={{
-                        padding: '4px 8px', borderRadius: 20, border: 'none', fontSize: 10, fontWeight: 500, cursor: 'pointer',
-                        background: ['#EAF3DE', '#FCEBEB', '#FAEEDA'][i],
-                        color: ['#27500A', '#791F1F', '#633806'][i],
-                        opacity: getEstado(a.id) === estado ? 1 : 0.3,
-                      }}>{['✓', '✕', '?'][i]}</button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <Avatar amigo={a} size={43} />
+                  <div style={{ flex: 1, fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '0.03em' }}>{a.nombre}</div>
+                  <div style={{ display: 'flex', gap: 5 }}>
+                    {['va', 'nova', 'pendiente'].map((est, i) => (
+                      <button key={est} onClick={() => setEstadoAsistencia(a.id, est)} style={{
+                        padding: '5px 10px', borderRadius: 20, border: 'none', fontSize: 10, fontWeight: 700, cursor: 'pointer',
+                        fontFamily: 'inherit',
+                        background: estado === est
+                          ? ['linear-gradient(145deg, var(--sage-light), var(--sage))', 'linear-gradient(145deg, #D8A0A0, #B87070)', 'linear-gradient(145deg, var(--bg-light), var(--bg-dark))'][i]
+                          : 'var(--bg)',
+                        color: estado === est
+                          ? ['var(--warm-grey)', '#fff', 'var(--text-secondary)'][i]
+                          : 'var(--text-secondary)',
+                        opacity: estado === est ? 1 : 0.4,
+                        boxShadow: estado === est
+                          ? '2px 2px 4px var(--shadow-dark), -2px -2px 4px var(--shadow-light)'
+                          : 'inset 1px 1px 3px var(--shadow-dark), inset -1px -1px 3px var(--shadow-light)',
+                      }}>{'✓✕?'[i]}</button>
                     ))}
                   </div>
                 </div>
               </div>
-            ))}
+            )})}
           </div>
         )}
 
         {/* TAB ENTRADAS */}
         {subtab === 'entradas' && (
           <div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 16 }}>
-              <div style={{ background: '#EEEDFE', borderRadius: 10, padding: 10, textAlign: 'center' }}>
-                <div style={{ fontSize: 20, fontWeight: 500, color: '#3C3489' }}>{totalGastado.toFixed(2)}€</div>
-                <div style={{ fontSize: 10, color: '#534AB7' }}>Total</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 16 }}>
+              <div style={{ ...card, marginBottom: 0, padding: 12, textAlign: 'center' }}>
+                <div style={{ fontSize: 20, fontWeight: 300, color: 'var(--sage-dark)' }}>{totalGastado.toFixed(2)}€</div>
+                <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.2em', textTransform: 'uppercase', marginTop: 2 }}>Total</div>
               </div>
-              <div style={{ background: '#FCEBEB', borderRadius: 10, padding: 10, textAlign: 'center' }}>
-                <div style={{ fontSize: 20, fontWeight: 500, color: '#791F1F' }}>{totalPendiente.toFixed(2)}€</div>
-                <div style={{ fontSize: 10, color: '#A32D2D' }}>Pendiente</div>
+              <div style={{ ...card, marginBottom: 0, padding: 12, textAlign: 'center' }}>
+                <div style={{ fontSize: 20, fontWeight: 300, color: '#B85C5C' }}>{totalPendiente.toFixed(2)}€</div>
+                <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.2em', textTransform: 'uppercase', marginTop: 2 }}>Pendiente</div>
               </div>
-              <div style={{ background: '#EAF3DE', borderRadius: 10, padding: 10, textAlign: 'center' }}>
-                <div style={{ fontSize: 20, fontWeight: 500, color: '#27500A' }}>{totalCobrado.toFixed(2)}€</div>
-                <div style={{ fontSize: 10, color: '#3B6D11' }}>Cobrado</div>
+              <div style={{ ...card, marginBottom: 0, padding: 12, textAlign: 'center', background: 'linear-gradient(145deg, var(--sage-light), var(--sage))' }}>
+                <div style={{ fontSize: 20, fontWeight: 300, color: 'var(--warm-grey)' }}>{totalCobrado.toFixed(2)}€</div>
+                <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--warm-grey)', letterSpacing: '0.2em', textTransform: 'uppercase', marginTop: 2 }}>Cobrado</div>
               </div>
             </div>
 
             {gastos.length > 0 && (
               <div style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 11, fontWeight: 500, color: '#888', marginBottom: 8 }}>QUIÉN COMPRÓ</div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 10, letterSpacing: '0.25em', textTransform: 'uppercase' }}>Quién compró</div>
                 {gastos.map(g => {
                   const pagosGasto = pagos.filter(p => p.gasto_id === g.id)
                   const pendientesG = pagosGasto.filter(p => !p.pagado)
                   const cobradosG = pagosGasto.filter(p => p.pagado && p.pagador_id !== g.comprador_id)
                   return (
-                    <div key={g.id} style={{ background: 'white', borderRadius: 12, padding: 14, marginBottom: 10, border: '1px solid #eee' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: pendientesG.length + cobradosG.length > 0 ? 10 : 0 }}>
-                        <Avatar amigo={g.amigos} size={41} />
+                    <div key={g.id} style={card}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: pendientesG.length + cobradosG.length > 0 ? 12 : 0 }}>
+                        <Avatar amigo={g.amigos} size={43} />
                         <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: 14, fontWeight: 500 }}>{g.amigos?.nombre} compró</div>
-                          <div style={{ fontSize: 12, color: '#888' }}>{g.cantidad} entrada{g.cantidad > 1 ? 's' : ''} · {Number(g.precio_entrada).toFixed(2)}€ c/u · <span style={{ fontWeight: 500, color: '#534AB7' }}>{(g.precio_entrada * g.cantidad).toFixed(2)}€ total</span></div>
+                          <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '0.03em' }}>{g.amigos?.nombre} compró</div>
+                          <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2, letterSpacing: '0.03em' }}>{g.cantidad} entrada{g.cantidad > 1 ? 's' : ''} · {Number(g.precio_entrada).toFixed(2)}€ c/u · <span style={{ fontWeight: 700, color: 'var(--sage-dark)' }}>{(g.precio_entrada * g.cantidad).toFixed(2)}€ total</span></div>
                         </div>
-
-                        {/* BOTONES SUBIR Y EDITAR */}
                         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }} onClick={e => e.stopPropagation()}>
-
                           {g.pdf_url ? (
                             <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                               <button onClick={() => window.open(g.pdf_url, '_blank')} style={{
-                                background: '#EEEDFE', border: 'none', borderRadius: 8,
-                                padding: '4px 10px', fontSize: 11, color: '#3C3489', cursor: 'pointer', fontWeight: 500
-                              }}>📄 Ver entrada</button>
+                                background: 'linear-gradient(145deg, var(--sage-light), var(--sage))',
+                                border: 'none', borderRadius: 10,
+                                padding: '5px 10px', fontSize: 10, color: 'var(--warm-grey)', cursor: 'pointer', fontWeight: 700,
+                                letterSpacing: '0.05em', fontFamily: 'inherit',
+                                boxShadow: '2px 2px 4px var(--shadow-dark), -2px -2px 4px var(--shadow-light)',
+                              }}>📄 Ver</button>
                               <button onClick={() => borrarEntrada(g)} style={{
-                                background: 'none', border: 'none', fontSize: 12, color: '#ccc', cursor: 'pointer'
+                                background: 'none', border: 'none', fontSize: 12, color: 'var(--text-secondary)', cursor: 'pointer'
                               }}>✕</button>
                             </div>
                           ) : (
@@ -361,56 +422,56 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
                               <button
                                 onClick={() => setMenuSubirId(menuSubirId === g.id ? null : g.id)}
                                 style={{
-                                  background: '#f0f0f0', border: 'none', borderRadius: 8,
-                                  padding: '4px 10px', fontSize: 11, color: '#555', cursor: 'pointer',
-                                  display: 'flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap'
-                                }}>
-                                🎟 Subir ▾
-                              </button>
+                                  background: 'var(--bg)', border: 'none', borderRadius: 10,
+                                  padding: '5px 10px', fontSize: 10, color: 'var(--text-secondary)', cursor: 'pointer',
+                                  display: 'flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap',
+                                  fontWeight: 700, fontFamily: 'inherit',
+                                  boxShadow: '2px 2px 4px var(--shadow-dark), -2px -2px 4px var(--shadow-light)',
+                                }}>🎟 Subir ▾</button>
                               {menuSubirId === g.id && (
                                 <div style={{
                                   position: 'absolute', top: '110%', right: 0, zIndex: 100,
-                                  background: 'white', borderRadius: 10, boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
-                                  border: '1px solid #eee', minWidth: 155, overflow: 'hidden'
+                                  background: 'var(--bg)', borderRadius: 14,
+                                  boxShadow: '8px 8px 20px var(--shadow-dark), -8px -8px 20px var(--shadow-light)',
+                                  minWidth: 165, overflow: 'hidden'
                                 }}>
                                   <label style={{
-                                    width: '100%', padding: '11px 14px',
+                                    width: '100%', padding: '12px 16px',
                                     display: 'flex', alignItems: 'center', gap: 8,
-                                    fontSize: 13, cursor: 'pointer', boxSizing: 'border-box'
+                                    fontSize: 12, cursor: 'pointer', boxSizing: 'border-box',
+                                    color: 'var(--text-primary)', fontWeight: 600,
                                   }}>
                                     📎 Subir archivo
                                     <input type='file' accept='application/pdf,image/*' style={{ display: 'none' }}
                                       onChange={e => { subirEntrada(g, e.target.files[0]); setMenuSubirId(null) }} />
                                   </label>
-                                  <div style={{ height: 1, background: '#f0f0f0' }} />
+                                  <div style={{ height: 1, background: 'var(--bg-dark)' }} />
                                   <button onClick={() => { pegarEntrada(g); setMenuSubirId(null) }}
                                     style={{
-                                      width: '100%', padding: '11px 14px', textAlign: 'left',
-                                      background: 'none', border: 'none', fontSize: 13, cursor: 'pointer',
-                                      display: 'flex', alignItems: 'center', gap: 8
-                                    }}>
-                                    📋 Pegar imagen
-                                  </button>
+                                      width: '100%', padding: '12px 16px', textAlign: 'left',
+                                      background: 'none', border: 'none', fontSize: 12, cursor: 'pointer',
+                                      display: 'flex', alignItems: 'center', gap: 8,
+                                      color: 'var(--text-primary)', fontWeight: 600, fontFamily: 'inherit',
+                                    }}>📋 Pegar imagen</button>
                                 </div>
                               )}
                             </div>
                           )}
-
                           <div style={{ position: 'relative' }}>
                             <button
                               onClick={() => setMenuEditarId(menuEditarId === g.id ? null : g.id)}
                               style={{
-                                background: '#f0f0f0', border: 'none', borderRadius: 8,
-                                padding: '4px 10px', fontSize: 11, color: '#555', cursor: 'pointer',
-                                whiteSpace: 'nowrap'
-                              }}>
-                              ✏️ Editar ▾
-                            </button>
+                                background: 'var(--bg)', border: 'none', borderRadius: 10,
+                                padding: '5px 10px', fontSize: 10, color: 'var(--text-secondary)', cursor: 'pointer',
+                                whiteSpace: 'nowrap', fontWeight: 700, fontFamily: 'inherit',
+                                boxShadow: '2px 2px 4px var(--shadow-dark), -2px -2px 4px var(--shadow-light)',
+                              }}>✏️ ▾</button>
                             {menuEditarId === g.id && (
                               <div style={{
                                 position: 'absolute', top: '110%', right: 0, zIndex: 100,
-                                background: 'white', borderRadius: 10, boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
-                                border: '1px solid #eee', minWidth: 155, overflow: 'hidden'
+                                background: 'var(--bg)', borderRadius: 14,
+                                boxShadow: '8px 8px 20px var(--shadow-dark), -8px -8px 20px var(--shadow-light)',
+                                minWidth: 165, overflow: 'hidden'
                               }}>
                                 <button
                                   onClick={() => {
@@ -419,13 +480,12 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
                                     setMenuEditarId(null)
                                   }}
                                   style={{
-                                    width: '100%', padding: '11px 14px', textAlign: 'left',
-                                    background: 'none', border: 'none', fontSize: 13, cursor: 'pointer',
-                                    display: 'flex', alignItems: 'center', gap: 8
-                                  }}>
-                                  ✏️ Modificar datos
-                                </button>
-                                <div style={{ height: 1, background: '#f0f0f0' }} />
+                                    width: '100%', padding: '12px 16px', textAlign: 'left',
+                                    background: 'none', border: 'none', fontSize: 12, cursor: 'pointer',
+                                    display: 'flex', alignItems: 'center', gap: 8,
+                                    color: 'var(--text-primary)', fontWeight: 600, fontFamily: 'inherit',
+                                  }}>✏️ Modificar</button>
+                                <div style={{ height: 1, background: 'var(--bg-dark)' }} />
                                 <button
                                   onClick={() => {
                                     if (confirm('¿Eliminar esta compra y todos sus pagos?')) {
@@ -434,42 +494,51 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
                                     }
                                   }}
                                   style={{
-                                    width: '100%', padding: '11px 14px', textAlign: 'left',
-                                    background: 'none', border: 'none', fontSize: 13,
-                                    color: '#E24B4A', cursor: 'pointer',
-                                    display: 'flex', alignItems: 'center', gap: 8
-                                  }}>
-                                  🗑️ Eliminar
-                                </button>
+                                    width: '100%', padding: '12px 16px', textAlign: 'left',
+                                    background: 'none', border: 'none', fontSize: 12,
+                                    color: '#B85C5C', cursor: 'pointer', fontWeight: 600,
+                                    display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'inherit',
+                                  }}>🗑️ Eliminar</button>
                               </div>
                             )}
                           </div>
-
                         </div>
                       </div>
 
                       {pendientesG.length > 0 && (
                         <div style={{ marginBottom: 8 }}>
-                          <div style={{ fontSize: 10, color: '#A32D2D', marginBottom: 6, fontWeight: 500 }}>DEBEN PAGAR A {g.amigos?.nombre.toUpperCase()}</div>
+                          <div style={{ fontSize: 9, color: '#B85C5C', marginBottom: 8, fontWeight: 700, letterSpacing: '0.25em', textTransform: 'uppercase' }}>Deben pagar a {g.amigos?.nombre}</div>
                           {pendientesG.map(p => (
-                            <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                              <Avatar amigo={p.amigos} size={31} />
-                              <span style={{ fontSize: 13, flex: 1 }}>{p.amigos?.nombre}</span>
-                              <span style={{ fontSize: 12, color: '#E24B4A', fontWeight: 500 }}>{Number(p.cantidad).toFixed(2)}€</span>
-                              <button onClick={() => togglePago(p)} style={{ padding: '3px 10px', borderRadius: 20, border: 'none', background: '#FCEBEB', color: '#791F1F', fontSize: 11, fontWeight: 500, cursor: 'pointer' }}>· Pendiente</button>
+                            <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                              <Avatar amigo={p.amigos} size={32} />
+                              <span style={{ fontSize: 13, flex: 1, fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '0.03em' }}>{p.amigos?.nombre}</span>
+                              <span style={{ fontSize: 12, color: '#B85C5C', fontWeight: 700 }}>{Number(p.cantidad).toFixed(2)}€</span>
+                              <button onClick={() => togglePago(p)} style={{
+                                padding: '4px 12px', borderRadius: 20, border: 'none',
+                                background: 'linear-gradient(145deg, #E8D8D8, #D8C6C6)',
+                                color: '#8B4444', fontSize: 10, fontWeight: 700, cursor: 'pointer',
+                                letterSpacing: '0.08em', fontFamily: 'inherit',
+                                boxShadow: '2px 2px 4px var(--shadow-dark), -2px -2px 4px var(--shadow-light)',
+                              }}>Pendiente</button>
                             </div>
                           ))}
                         </div>
                       )}
                       {cobradosG.length > 0 && (
                         <div>
-                          <div style={{ fontSize: 10, color: '#3B6D11', marginBottom: 6, fontWeight: 500 }}>YA PAGARON</div>
+                          <div style={{ fontSize: 9, color: 'var(--sage-dark)', marginBottom: 8, fontWeight: 700, letterSpacing: '0.25em', textTransform: 'uppercase' }}>Ya pagaron</div>
                           {cobradosG.map(p => (
-                            <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, opacity: 0.6 }}>
-                              <Avatar amigo={p.amigos} size={31} />
-                              <span style={{ fontSize: 13, flex: 1 }}>{p.amigos?.nombre}</span>
-                              <span style={{ fontSize: 12, color: '#3B6D11', fontWeight: 500 }}>{Number(p.cantidad).toFixed(2)}€</span>
-                              <button onClick={() => togglePago(p)} style={{ padding: '3px 10px', borderRadius: 20, border: 'none', background: '#EAF3DE', color: '#27500A', fontSize: 11, fontWeight: 500, cursor: 'pointer' }}>✓ Pagado</button>
+                            <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, opacity: 0.6 }}>
+                              <Avatar amigo={p.amigos} size={32} />
+                              <span style={{ fontSize: 13, flex: 1, fontWeight: 600, color: 'var(--text-primary)' }}>{p.amigos?.nombre}</span>
+                              <span style={{ fontSize: 12, color: 'var(--sage-dark)', fontWeight: 700 }}>{Number(p.cantidad).toFixed(2)}€</span>
+                              <button onClick={() => togglePago(p)} style={{
+                                padding: '4px 12px', borderRadius: 20, border: 'none',
+                                background: 'linear-gradient(145deg, var(--sage-light), var(--sage))',
+                                color: 'var(--warm-grey)', fontSize: 10, fontWeight: 700, cursor: 'pointer',
+                                letterSpacing: '0.08em', fontFamily: 'inherit',
+                                boxShadow: '2px 2px 4px var(--shadow-dark), -2px -2px 4px var(--shadow-light)',
+                              }}>✓ Pagado</button>
                             </div>
                           ))}
                         </div>
@@ -482,25 +551,26 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
 
             {resumenPorAmigo.length > 0 && (
               <div style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 11, fontWeight: 500, color: '#888', marginBottom: 8 }}>RESUMEN POR AMIGO</div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 10, letterSpacing: '0.25em', textTransform: 'uppercase' }}>Resumen por amigo</div>
                 {resumenPorAmigo.map(({ amigo, totalDebe, detalleDeudas }) => (
                   <div key={amigo.id} style={{
-                    background: totalDebe > 0 ? '#FCEBEB' : '#EAF3DE',
-                    borderRadius: 12, padding: '10px 14px', marginBottom: 8,
-                    border: `1px solid ${totalDebe > 0 ? '#F09595' : '#C0DD97'}`
+                    ...card,
+                    background: totalDebe > 0
+                      ? 'linear-gradient(145deg, #E8D8D8, #D8C6C6)'
+                      : 'linear-gradient(145deg, var(--sage-light), var(--sage))',
                   }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <Avatar amigo={amigo} size={36} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <Avatar amigo={amigo} size={38} />
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 13, fontWeight: 500, color: totalDebe > 0 ? '#791F1F' : '#27500A' }}>{amigo.nombre}</div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: totalDebe > 0 ? '#6B3333' : 'var(--warm-grey)', letterSpacing: '0.03em' }}>{amigo.nombre}</div>
                         {totalDebe > 0 && detalleDeudas.map((d, i) => (
-                          <div key={i} style={{ fontSize: 11, color: '#A32D2D', marginTop: 2 }}>
+                          <div key={i} style={{ fontSize: 11, color: '#8B4444', marginTop: 3 }}>
                             Debe {d.cantidad.toFixed(2)}€ a {d.comprador?.nombre}
                           </div>
                         ))}
-                        {totalDebe === 0 && <div style={{ fontSize: 11, color: '#3B6D11', marginTop: 2 }}>Todo pagado ✓</div>}
+                        {totalDebe === 0 && <div style={{ fontSize: 11, color: 'var(--warm-grey)', marginTop: 3, fontWeight: 600 }}>Todo pagado ✓</div>}
                       </div>
-                      {totalDebe > 0 && <div style={{ fontSize: 15, fontWeight: 500, color: '#E24B4A' }}>{totalDebe.toFixed(2)}€</div>}
+                      {totalDebe > 0 && <div style={{ fontSize: 16, fontWeight: 700, color: '#8B4444' }}>{totalDebe.toFixed(2)}€</div>}
                     </div>
                   </div>
                 ))}
@@ -508,48 +578,55 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
             )}
 
             {!mostrarFormGasto && (
-              <button onClick={() => setMostrarFormGasto(true)} style={{ width: '100%', padding: 12, borderRadius: 10, background: 'white', color: '#7F77DD', border: '1px solid #7F77DD', fontSize: 14, fontWeight: 500, marginTop: 8 }}>
-                + Registrar quién compró las entradas
-              </button>
+              <button onClick={() => setMostrarFormGasto(true)} style={{
+                ...sageBtn, width: '100%', padding: 14, borderRadius: 16, marginTop: 8,
+                fontSize: 10,
+              }}>+ Registrar quién compró</button>
             )}
 
             {mostrarFormGasto && (
-              <div style={{ background: 'white', borderRadius: 12, padding: 16, marginTop: 8, border: '1px solid #7F77DD' }}>
-                <div style={{ fontSize: 12, fontWeight: 500, color: '#7F77DD', marginBottom: 12 }}>¿QUIÉN COMPRÓ LAS ENTRADAS?</div>
-                <div style={{ marginBottom: 12 }}>
-                  <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 4 }}>Comprador</label>
+              <div style={{ ...card, padding: 20, marginTop: 8 }}>
+                <div style={{ ...labelNeu, color: 'var(--sage-dark)', marginBottom: 16 }}>¿Quién compró las entradas?</div>
+                <div style={{ marginBottom: 14 }}>
+                  <label style={labelNeu}>Comprador</label>
                   <select value={formGasto.comprador_id} onChange={e => setFormGasto(f => ({ ...f, comprador_id: e.target.value, receptores: [] }))}
-                    style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #ddd', fontSize: 14, background: 'white' }}>
+                    style={inputNeu}>
                     <option value=''>— Selecciona —</option>
                     {amigos.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
                   </select>
                 </div>
-                <div style={{ marginBottom: 12 }}>
-                  <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 4 }}>Precio por entrada (€)</label>
+                <div style={{ marginBottom: 14 }}>
+                  <label style={labelNeu}>Precio por entrada (€)</label>
                   <input type='number' value={formGasto.precio_entrada} onChange={e => setFormGasto(f => ({ ...f, precio_entrada: e.target.value }))}
-                    placeholder='Ej: 37.40' step='0.01' style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #ddd', fontSize: 14 }} />
+                    placeholder='Ej: 37.40' step='0.01' style={inputNeu} />
                 </div>
                 {formGasto.comprador_id && (
-                  <div style={{ marginBottom: 16 }}>
-                    <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 8 }}>
-                      ¿A quién le dio las entradas? <span style={{ color: '#7F77DD' }}>({formGasto.receptores.length} seleccionados)</span>
+                  <div style={{ marginBottom: 18 }}>
+                    <label style={labelNeu}>
+                      ¿A quién le dio entradas? <span style={{ color: 'var(--sage-dark)' }}>({formGasto.receptores.length})</span>
                     </label>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                       {amigos.map(a => {
                         const esComprador = a.id === formGasto.comprador_id
                         const seleccionado = esComprador || formGasto.receptores.includes(a.id)
                         return (
                           <div key={a.id} onClick={() => !esComprador && toggleReceptor(a.id)} style={{
-                            display: 'flex', alignItems: 'center', gap: 10,
-                            padding: '8px 12px', borderRadius: 10, cursor: esComprador ? 'default' : 'pointer',
-                            background: esComprador ? '#EAF3DE' : seleccionado ? '#EEEDFE' : '#f8f8f8',
-                            border: esComprador ? '1px solid #C0DD97' : seleccionado ? '1px solid #AFA9EC' : '1px solid #eee',
+                            display: 'flex', alignItems: 'center', gap: 12,
+                            padding: '10px 14px', borderRadius: 14, cursor: esComprador ? 'default' : 'pointer',
+                            background: esComprador
+                              ? 'linear-gradient(145deg, var(--sage-light), var(--sage))'
+                              : seleccionado
+                              ? 'linear-gradient(145deg, var(--bg-light), var(--bg-dark))'
+                              : 'var(--bg)',
+                            boxShadow: seleccionado
+                              ? '3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light)'
+                              : 'inset 2px 2px 4px var(--shadow-dark), inset -2px -2px 4px var(--shadow-light)',
                           }}>
-                            <Avatar amigo={a} size={34} />
-                            <span style={{ fontSize: 13, flex: 1, fontWeight: 500, color: esComprador ? '#27500A' : seleccionado ? '#3C3489' : 'var(--color-text-primary)' }}>{a.nombre}</span>
+                            <Avatar amigo={a} size={36} />
+                            <span style={{ fontSize: 13, flex: 1, fontWeight: 700, color: esComprador ? 'var(--warm-grey)' : seleccionado ? 'var(--text-primary)' : 'var(--text-secondary)', letterSpacing: '0.03em' }}>{a.nombre}</span>
                             {esComprador
-                              ? <span style={{ fontSize: 11, color: '#27500A', fontWeight: 500 }}>comprador ✓</span>
-                              : <span style={{ fontSize: 16, color: seleccionado ? '#7F77DD' : '#ddd' }}>{seleccionado ? '✓' : '○'}</span>
+                              ? <span style={{ fontSize: 9, color: 'var(--warm-grey)', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase' }}>Comprador ✓</span>
+                              : <span style={{ fontSize: 16, color: seleccionado ? 'var(--sage-dark)' : 'var(--text-secondary)', opacity: seleccionado ? 1 : 0.3 }}>{seleccionado ? '✓' : '○'}</span>
                             }
                           </div>
                         )
@@ -557,11 +634,16 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
                     </div>
                   </div>
                 )}
-                <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{ display: 'flex', gap: 10 }}>
                   <button onClick={() => { setMostrarFormGasto(false); setFormGasto({ comprador_id: '', precio_entrada: '', receptores: [] }) }}
-                    style={{ flex: 1, padding: 10, borderRadius: 8, border: '1px solid #ddd', background: 'white', fontSize: 13 }}>Cancelar</button>
-                  <button onClick={guardarGasto}
-                    style={{ flex: 1, padding: 10, borderRadius: 8, border: 'none', background: '#7F77DD', color: 'white', fontSize: 13, fontWeight: 500 }}>Guardar</button>
+                    style={{
+                      flex: 1, padding: 12, borderRadius: 14, border: 'none',
+                      background: 'var(--bg)', color: 'var(--text-secondary)',
+                      fontSize: 11, fontWeight: 700, fontFamily: 'inherit',
+                      letterSpacing: '0.15em', textTransform: 'uppercase',
+                      boxShadow: '3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light)',
+                    }}>Cancelar</button>
+                  <button onClick={guardarGasto} style={{ ...sageBtn, flex: 1, padding: 12, borderRadius: 14, fontSize: 11 }}>Guardar</button>
                 </div>
               </div>
             )}
@@ -575,41 +657,45 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
         {subtab === 'fotos' && (
           <Album concierto={concierto} amigos={amigos} />
         )}
-        
 
       </div>
 
       {/* MODAL EDITAR GASTO */}
       {gastoEditando && (
         <div style={{
-          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 200,
-          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20
+          position: 'fixed', inset: 0, background: 'rgba(60,48,40,0.5)', zIndex: 200,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20,
+          backdropFilter: 'blur(4px)',
         }}>
-          <div style={{ background: 'white', borderRadius: 16, padding: 20, width: '100%', maxWidth: 360 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: '#3C3489', marginBottom: 16 }}>✏️ MODIFICAR COMPRA</div>
-            <div style={{ marginBottom: 12 }}>
-              <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 4 }}>¿Quién compró?</label>
+          <div style={{
+            background: 'var(--bg)', borderRadius: 22, padding: 22, width: '100%', maxWidth: 360,
+            boxShadow: '12px 12px 24px var(--shadow-dark), -12px -12px 24px var(--shadow-light)',
+          }}>
+            <div style={{ ...labelNeu, color: 'var(--sage-dark)', marginBottom: 18 }}>✏️ Modificar compra</div>
+            <div style={{ marginBottom: 14 }}>
+              <label style={labelNeu}>¿Quién compró?</label>
               <select value={formEditarGasto.comprador_id} onChange={e => setFormEditarGasto(f => ({ ...f, comprador_id: e.target.value }))}
-                style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #ddd', fontSize: 14, background: 'white' }}>
+                style={inputNeu}>
                 <option value=''>— Selecciona —</option>
                 {amigos.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
               </select>
             </div>
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 4 }}>Precio por entrada (€)</label>
+            <div style={{ marginBottom: 18 }}>
+              <label style={labelNeu}>Precio por entrada (€)</label>
               <input type='number' value={formEditarGasto.precio_entrada} step='0.01'
                 onChange={e => setFormEditarGasto(f => ({ ...f, precio_entrada: e.target.value }))}
-                style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #ddd', fontSize: 14 }} />
+                style={inputNeu} />
             </div>
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ display: 'flex', gap: 10 }}>
               <button onClick={() => setGastoEditando(null)}
-                style={{ flex: 1, padding: 10, borderRadius: 8, border: '1px solid #ddd', background: 'white', fontSize: 13 }}>
-                Cancelar
-              </button>
-              <button onClick={guardarEdicionGasto}
-                style={{ flex: 1, padding: 10, borderRadius: 8, border: 'none', background: '#7F77DD', color: 'white', fontSize: 13, fontWeight: 500 }}>
-                Guardar
-              </button>
+                style={{
+                  flex: 1, padding: 12, borderRadius: 14, border: 'none',
+                  background: 'var(--bg)', color: 'var(--text-secondary)',
+                  fontSize: 11, fontWeight: 700, fontFamily: 'inherit',
+                  letterSpacing: '0.15em', textTransform: 'uppercase',
+                  boxShadow: '3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light)',
+                }}>Cancelar</button>
+              <button onClick={guardarEdicionGasto} style={{ ...sageBtn, flex: 1, padding: 12, borderRadius: 14, fontSize: 11 }}>Guardar</button>
             </div>
           </div>
         </div>
