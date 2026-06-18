@@ -94,20 +94,34 @@ export default function EditarConcierto({ concierto, amigos, onGuardado, onCance
     onGuardado()
   }
 
-  const campo = (label, key, setter, tipo = 'text', placeholder = '') => (
-    <div style={{ marginBottom: 12 }}>
-      <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 4 }}>{label}</label>
-      <input type={tipo} value={key} placeholder={placeholder}
-        onChange={e => setter(e.target.value)}
-        style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #ddd', fontSize: 14, background: 'white' }} />
+  const inputNeu = {
+    width: '100%', padding: '11px 14px', borderRadius: 12, border: 'none',
+    background: 'var(--bg)',
+    boxShadow: 'inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light)',
+    fontSize: 14, color: 'var(--text-primary)', fontFamily: 'inherit', outline: 'none',
+    boxSizing: 'border-box',
+  }
+  const labelNeu = {
+    fontSize: 10, color: 'var(--text-secondary)', display: 'block', marginBottom: 8,
+    fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase',
+  }
+  const seccionTitulo = {
+    fontSize: 10, fontWeight: 700, color: 'var(--sage-dark)',
+    marginBottom: 16, letterSpacing: '0.25em', textTransform: 'uppercase',
+  }
+
+  const campo = (label, value, setter, tipo = 'text', placeholder = '') => (
+    <div style={{ marginBottom: 14 }}>
+      <label style={labelNeu}>{label}</label>
+      <input type={tipo} value={value} placeholder={placeholder}
+        onChange={e => setter(e.target.value)} style={inputNeu} />
     </div>
   )
 
   const selectAmigo = (label, value, setter) => (
-    <div style={{ marginBottom: 12 }}>
-      <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 4 }}>{label}</label>
-      <select value={value} onChange={e => setter(e.target.value)}
-        style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #ddd', fontSize: 14, background: 'white' }}>
+    <div style={{ marginBottom: 14 }}>
+      <label style={labelNeu}>{label}</label>
+      <select value={value} onChange={e => setter(e.target.value)} style={inputNeu}>
         <option value=''>— Sin asignar —</option>
         {amigos.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
       </select>
@@ -115,44 +129,61 @@ export default function EditarConcierto({ concierto, amigos, onGuardado, onCance
   )
 
   const toggle = (label, value, setter) => (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-      <label style={{ fontSize: 13, color: '#444' }}>{label}</label>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+      <label style={{ fontSize: 12, color: 'var(--text-primary)', fontWeight: 600, letterSpacing: '0.04em' }}>{label}</label>
       <button onClick={() => setter(!value)} style={{
-        padding: '4px 14px', borderRadius: 20, border: 'none', fontSize: 12, fontWeight: 500, cursor: 'pointer',
-        background: value ? '#EAF3DE' : '#f0f0f0',
-        color: value ? '#27500A' : '#888',
+        padding: '5px 14px', borderRadius: 20, border: 'none', fontSize: 10, fontWeight: 700, cursor: 'pointer',
+        fontFamily: 'inherit', letterSpacing: '0.12em', textTransform: 'uppercase',
+        background: value
+          ? 'linear-gradient(145deg, var(--sage-light), var(--sage))'
+          : 'var(--bg)',
+        color: value ? 'var(--warm-grey)' : 'var(--text-secondary)',
+        boxShadow: value
+          ? '2px 2px 4px var(--shadow-dark), -2px -2px 4px var(--shadow-light)'
+          : 'inset 2px 2px 4px var(--shadow-dark), inset -2px -2px 4px var(--shadow-light)',
       }}>{value ? '✓ Sí' : '· No'}</button>
     </div>
   )
 
   return (
     <div style={{ padding: 16 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <h2 style={{ fontSize: 16, fontWeight: 500 }}>Editar concierto</h2>
-        <button onClick={onCancelar} style={{ background: 'none', border: 'none', fontSize: 20, color: '#888' }}>✕</button>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
+        <h2 style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.25em', textTransform: 'uppercase', color: 'var(--text-primary)' }}>Editar concierto</h2>
+        <button onClick={onCancelar} style={{
+          background: 'var(--bg)', border: 'none', borderRadius: '50%',
+          width: 36, height: 36, fontSize: 16, color: 'var(--text-secondary)',
+          cursor: 'pointer', fontFamily: 'inherit',
+          boxShadow: '3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light)',
+        }}>✕</button>
       </div>
-      <div style={{ background: 'white', borderRadius: 12, padding: 16, marginBottom: 12 }}>
-        <div style={{ fontSize: 12, fontWeight: 500, color: '#7F77DD', marginBottom: 12 }}>CONCIERTO</div>
+
+      <div style={{
+        background: 'var(--bg)', borderRadius: 20, padding: 20, marginBottom: 14,
+        boxShadow: '6px 6px 12px var(--shadow-dark), -6px -6px 12px var(--shadow-light)',
+      }}>
+        <div style={seccionTitulo}>Concierto</div>
         {campo('Artista *', form.artista, v => set('artista', v), 'text', 'Ej: Metallica')}
         {campo('Fecha *', form.fecha, v => set('fecha', v), 'date')}
         {campo('Recinto *', form.recinto, v => set('recinto', v), 'text', 'Ej: Palau Sant Jordi')}
         {campo('Ciudad *', form.ciudad, v => set('ciudad', v), 'text', 'Ej: Barcelona')}
         {campo('Hora apertura', form.hora_apertura, v => set('hora_apertura', v), 'time')}
-        <div style={{ marginBottom: 12 }}>
-          <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 4 }}>Estado</label>
-          <select value={form.estado} onChange={e => set('estado', e.target.value)}
-            style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #ddd', fontSize: 14, background: 'white' }}>
+        <div style={{ marginBottom: 14 }}>
+          <label style={labelNeu}>Estado</label>
+          <select value={form.estado} onChange={e => set('estado', e.target.value)} style={inputNeu}>
             <option value='pendiente'>Pendiente</option>
             <option value='confirmado'>Confirmado</option>
           </select>
         </div>
       </div>
-      <div style={{ background: 'white', borderRadius: 12, padding: 16, marginBottom: 12 }}>
-        <div style={{ fontSize: 12, fontWeight: 500, color: '#7F77DD', marginBottom: 12 }}>TRANSPORTE</div>
-        <div style={{ marginBottom: 12 }}>
-          <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 4 }}>Tipo</label>
-          <select value={formTransporte.tipo} onChange={e => setT('tipo', e.target.value)}
-            style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #ddd', fontSize: 14, background: 'white' }}>
+
+      <div style={{
+        background: 'var(--bg)', borderRadius: 20, padding: 20, marginBottom: 14,
+        boxShadow: '6px 6px 12px var(--shadow-dark), -6px -6px 12px var(--shadow-light)',
+      }}>
+        <div style={seccionTitulo}>Transporte</div>
+        <div style={{ marginBottom: 14 }}>
+          <label style={labelNeu}>Tipo</label>
+          <select value={formTransporte.tipo} onChange={e => setT('tipo', e.target.value)} style={inputNeu}>
             <option value=''>— Sin definir —</option>
             <option value='Coche'>Coche</option>
             <option value='Tren'>Tren</option>
@@ -164,37 +195,60 @@ export default function EditarConcierto({ concierto, amigos, onGuardado, onCance
         {selectAmigo('Responsable', formTransporte.responsable_id, v => setT('responsable_id', v))}
         {toggle('Confirmado', formTransporte.confirmado, v => setT('confirmado', v))}
       </div>
-      <div style={{ background: 'white', borderRadius: 12, padding: 16, marginBottom: 20 }}>
-        <div style={{ fontSize: 12, fontWeight: 500, color: '#7F77DD', marginBottom: 12 }}>HOTEL</div>
+
+      <div style={{
+        background: 'var(--bg)', borderRadius: 20, padding: 20, marginBottom: 20,
+        boxShadow: '6px 6px 12px var(--shadow-dark), -6px -6px 12px var(--shadow-light)',
+      }}>
+        <div style={seccionTitulo}>Hotel</div>
         {campo('Nombre del hotel', formHotel.nombre, v => setH('nombre', v), 'text', 'Ej: NH Madrid Atocha')}
         {selectAmigo('Responsable de la reserva', formHotel.responsable_id, v => setH('responsable_id', v))}
         {toggle('Reservado', formHotel.reservado, v => setH('reservado', v))}
       </div>
+
       <button onClick={guardar} disabled={guardando} style={{
-        width: '100%', padding: 12, borderRadius: 10,
-        background: '#7F77DD', color: 'white', border: 'none',
-        fontSize: 15, fontWeight: 500, marginBottom: 12
+        width: '100%', padding: 14, borderRadius: 16,
+        background: 'linear-gradient(145deg, var(--sage-light), var(--sage-dark))',
+        color: 'var(--warm-grey)', border: 'none',
+        fontSize: 11, fontWeight: 700, cursor: 'pointer',
+        letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 14,
+        boxShadow: '4px 4px 8px var(--shadow-dark), -4px -4px 8px var(--shadow-light)',
+        fontFamily: 'inherit',
       }}>
         {guardando ? 'Guardando...' : 'Guardar cambios'}
       </button>
+
       {!confirmaBorrar ? (
         <button onClick={() => setConfirmaBorrar(true)} style={{
-          width: '100%', padding: 12, borderRadius: 10,
-          background: 'white', color: '#E24B4A',
-          border: '1px solid #E24B4A', fontSize: 14
+          width: '100%', padding: 14, borderRadius: 16, cursor: 'pointer',
+          background: 'var(--bg)', color: '#B85C5C', border: 'none',
+          fontSize: 11, fontWeight: 700, fontFamily: 'inherit',
+          letterSpacing: '0.15em', textTransform: 'uppercase',
+          boxShadow: '4px 4px 8px var(--shadow-dark), -4px -4px 8px var(--shadow-light)',
         }}>Eliminar concierto</button>
       ) : (
-        <div style={{ background: '#FCEBEB', borderRadius: 10, padding: 14, textAlign: 'center' }}>
-          <div style={{ fontSize: 13, color: '#791F1F', marginBottom: 12 }}>
+        <div style={{
+          background: 'linear-gradient(145deg, #E8D8D8, #D8C6C6)',
+          borderRadius: 20, padding: 18, textAlign: 'center',
+          boxShadow: '6px 6px 12px var(--shadow-dark), -6px -6px 12px var(--shadow-light)',
+        }}>
+          <div style={{ fontSize: 12, color: '#6B3333', marginBottom: 16, fontWeight: 600, letterSpacing: '0.04em' }}>
             ¿Seguro? Se borrarán también las entradas, asistencia, hotel y transporte.
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 10 }}>
             <button onClick={() => setConfirmaBorrar(false)} style={{
-              flex: 1, padding: 10, borderRadius: 8, border: '1px solid #ddd', background: 'white', fontSize: 13
+              flex: 1, padding: 12, borderRadius: 14, border: 'none',
+              background: 'var(--bg)', color: 'var(--text-secondary)',
+              fontSize: 11, fontWeight: 700, fontFamily: 'inherit',
+              letterSpacing: '0.15em', textTransform: 'uppercase',
+              boxShadow: '3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light)',
             }}>Cancelar</button>
             <button onClick={borrar} style={{
-              flex: 1, padding: 10, borderRadius: 8, border: 'none',
-              background: '#E24B4A', color: 'white', fontSize: 13, fontWeight: 500
+              flex: 1, padding: 12, borderRadius: 14, border: 'none',
+              background: 'linear-gradient(145deg, #C87070, #A85050)',
+              color: '#fff', fontSize: 11, fontWeight: 700, fontFamily: 'inherit',
+              letterSpacing: '0.15em', textTransform: 'uppercase',
+              boxShadow: '3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light)',
             }}>Sí, eliminar</button>
           </div>
         </div>
