@@ -1,340 +1,398 @@
 import { writeFileSync } from 'fs'
 
-const fichaAmigoCode = `import { useState, useEffect } from 'react'
-import { supabase } from '../supabase'
+const estadisticasCode = `import { useMemo } from 'react'
+import { ArrowLeft, TrendingUp, MapPin, Euro, Calendar, Music2, Trophy } from 'lucide-react'
 import Avatar from './Avatar'
 
-const GENEROS = ['Rock', 'Pop', 'Indie', 'Electrónica', 'Jazz', 'Blues', 'Folk', 'Metal', 'Punk', 'Soul', 'R&B', 'Clásica', 'Reggae', 'Hip-hop']
+export default function EstadisticasGrupo({ conciertos, amigos, asistentes, gastos, onBack }) {
 
-export default function FichaAmigo({ amigo, amigos, onCerrar, onEditar }) {
-  const [asistencias, setAsistencias] = useState([])
-  const [conciertos, setConciertos] = useState([])
-  const [artistas, setArtistas] = useState(amigo.artistas_favoritos || [])
-  const [generos, setGeneros] = useState(amigo.generos_favoritos || [])
-  const [nuevoArtista, setNuevoArtista] = useState('')
-  const [editandoGustos, setEditandoGustos] = useState(false)
-  const [guardando, setGuardando] = useState(false)
+  const stats = useMemo(() => {
+    const hoy = new Date()
+    hoy.setHours(0, 0, 0, 0)
+    const conciertosPasados = (conciertos || []).filter(c => new Date(c.fecha) < hoy)
 
-  useEffect(() => { cargarDatos() }, [])
+    const totalConciertos = conciertosPasados.length
 
-  const cargarDatos = async () => {
-    const { data: asis } = await supabase
-      .from('asistentes')
-      .select('*, conciertos(id, artista, fecha, ciudad)')
-      .eq('amigo_id', amigo.id)
-      .eq('confirmado', true)
+    const ciudadesUnicas = new Set(conciertosPasados.map(c => c.ciudad).filter(Boolean))
+    const totalCiudades = ciudadesUnicas.size
 
-    setAsistencias(asis || [])
+    const totalInvertido = (gastos || []).reduce((sum, g) => {
+      const precio = parseFloat(g.precio_entrada) || 0
+      const cant = parseInt(g.cantidad) || 0
+      return sum + (precio * cant)
+    }, 0)
 
-    const mapaConciertos = new Map()
-    ;(asis || []).forEach(a => {
-      if (a.conciertos && a.conciertos.id && !mapaConciertos.has(a.conciertos.id)) {
-        mapaConciertos.set(a.conciertos.id, a.conciertos)
+    const porAno = {}
+    conciertosPasados.forEach(c => {
+      const ano = new Date(c.fecha).getFullYear()
+      porAno[ano] = (porAno[ano] || 0) + 1
+    })
+    const datosPorAno = Object.keys(porAno).sort().map(ano => ({
+      ano: parseInt(ano),
+      cantidad: porAno[ano]
+    }))
+    const maxAno = datosPorAno.length > 0 ? Math.max(...datosPorAno.map(d => d.cantidad)) : 0
+
+    let anoMasActivo = null
+    let maxConciertosAno = 0
+    Object.entries(porAno).forEach(([ano, cant]) => {
+      if (cant > maxConciertosAno) {
+        maxConciertosAno = cant
+        anoMasActivo = ano
       }
     })
-    setConciertos(Array.from(mapaConciertos.values()))
-  }
 
-  const guardarGustos = async () => {
-    setGuardando(true)
-    await supabase.from('amigos').update({
-      artistas_favoritos: artistas,
-      generos_favoritos: generos,
-    }).eq('id', amigo.id)
-    setGuardando(false)
-    setEditandoGustos(false)
-  }
+    const idsConciertosPasados = new Set(conciertosPasados.map(c => c.id))
+    const asistenciaPorAmigo = {}
+    ;(asistentes || []).forEach(a => {
+      if (a.confirmado === true && idsConciertosPasados.has(a.concierto_id)) {
+        asistenciaPorAmigo[a.amigo_id] = (asistenciaPorAmigo[a.amigo_id] || 0) + 1
+      }
+    })
 
-  const añadirArtista = () => {
-    if (!nuevoArtista.trim()) return
-    setArtistas(a => [...a, nuevoArtista.trim()])
-    setNuevoArtista('')
-  }
+    const ranking = (amigos || [])
+      .map(amigo => ({ ...amigo, conciertos: asistenciaPorAmigo[amigo.id] || 0 }))
+      .sort((a, b) => b.conciertos - a.conciertos)
 
-  const eliminarArtista = (i) => setArtistas(a => a.filter((_, idx) => idx !== i))
+    const maxRanking = ranking.length > 0 ? ranking[0].conciertos : 0
+    const conciertero = ranking.length > 0 && ranking[0].conciertos > 0 ? ranking[0] : null
 
-  const toggleGenero = (g) => setGeneros(gs =>
-    gs.includes(g) ? gs.filter(x => x !== g) : [...gs, g]
-  )
+    const ciudadesCount = {}
+    conciertosPasados.forEach(c => {
+      if (c.ciudad) ciudadesCount[c.ciudad] = (ciudadesCount[c.ciudad] || 0) + 1
+    })
+    const topCiudades = Object.entries(ciudadesCount)
+      .map(([ciudad, cant]) => ({ ciudad, cantidad: cant }))
+      .sort((a, b) => b.cantidad - a.cantidad)
+      .slice(0, 8)
 
-  const conciertosPerYear = conciertos.reduce((acc, c) => {
-    if (!c?.fecha) return acc
-    const year = new Date(c.fecha).getFullYear()
-    acc[year] = (acc[year] || 0) + 1
-    return acc
-  }, {})
+    const artistasCount = {}
+    conciertosPasados.forEach(c => {
+      if (!c.artista) return
+      const partes = c.artista
+        .split(/\\s*&\\s*|\\s*\\+\\s*|\\s*,\\s*|\\s+Y\\s+/i)
+        .map(p => p.trim())
+        .filter(Boolean)
+      partes.forEach(nombre => {
+        artistasCount[nombre] = (artistasCount[nombre] || 0) + 1
+      })
+    })
+    const artistaTop = Object.entries(artistasCount).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0]
 
-  const ciudades = conciertos.reduce((acc, c) => {
-    if (!c?.ciudad) return acc
-    acc[c.ciudad] = (acc[c.ciudad] || 0) + 1
-    return acc
-  }, {})
-  const ciudadFavorita = Object.entries(ciudades).sort((a, b) => b[1] - a[1])[0]
+    let conciertoMasCaro = null
+    let precioMaximo = 0
+    ;(gastos || []).forEach(g => {
+      const precio = parseFloat(g.precio_entrada) || 0
+      if (precio > precioMaximo) {
+        precioMaximo = precio
+        const concierto = conciertosPasados.find(c => c.id === g.concierto_id)
+        if (concierto) conciertoMasCaro = { ...concierto, precio }
+      }
+    })
+
+    const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
+    const mesesCount = {}
+    conciertosPasados.forEach(c => {
+      const mes = new Date(c.fecha).getMonth()
+      mesesCount[mes] = (mesesCount[mes] || 0) + 1
+    })
+    let mesFavorito = null
+    let maxMes = 0
+    Object.entries(mesesCount).forEach(([mes, cant]) => {
+      if (cant > maxMes) {
+        maxMes = cant
+        mesFavorito = { nombre: meses[parseInt(mes)], cantidad: cant }
+      }
+    })
+
+    return {
+      totalConciertos, totalCiudades, totalInvertido,
+      anoMasActivo, maxConciertosAno,
+      datosPorAno, maxAno,
+      ranking, maxRanking, conciertero,
+      topCiudades, artistaTop, conciertoMasCaro, mesFavorito
+    }
+  }, [conciertos, amigos, asistentes, gastos])
+
+  const formatEuro = (n) => new Intl.NumberFormat('es-ES', {
+    style: 'currency', currency: 'EUR',
+    minimumFractionDigits: 0, maximumFractionDigits: 0
+  }).format(n)
 
   const card = {
-    background: 'var(--bg)', borderRadius: 18, padding: 16, marginBottom: 14,
+    background: 'var(--bg)', borderRadius: 20, padding: 18, marginBottom: 14,
     boxShadow: '6px 6px 12px var(--shadow-dark), -6px -6px 12px var(--shadow-light)',
   }
   const tituloSeccion = {
-    fontSize: 10, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 14,
+    margin: '0 0 16px', fontSize: 11, fontWeight: 700, color: 'var(--text-primary)',
     letterSpacing: '0.25em', textTransform: 'uppercase',
-  }
-  const inputStyle = {
-    flex: 1, padding: '10px 14px', borderRadius: 12, border: 'none',
-    background: 'var(--bg)',
-    boxShadow: 'inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light)',
-    fontSize: 14, color: 'var(--text-primary)', fontFamily: 'inherit', outline: 'none',
+    display: 'flex', alignItems: 'center', gap: 8,
   }
 
   return (
-    <div style={{ maxWidth: 390, margin: '0 auto', background: 'var(--bg)', minHeight: '100vh' }}>
+    <div style={{ maxWidth: 390, margin: '0 auto', background: 'var(--bg)', minHeight: '100vh', paddingBottom: 30 }}>
+
       <div style={{
         background: 'linear-gradient(135deg, var(--warm-grey), #4A4137)',
-        padding: '22px 18px 28px',
-        boxShadow: '0 6px 16px rgba(60,48,40,0.25)',
+        padding: '18px 16px',
+        position: 'sticky', top: 0, zIndex: 10,
+        boxShadow: '0 6px 16px rgba(60,48,40,0.25)'
       }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
-          <button onClick={onCerrar} style={{
-            background: 'rgba(245,239,230,0.1)', border: 'none', color: 'var(--sage-light)',
-            fontSize: 22, cursor: 'pointer', width: 36, height: 36, borderRadius: '50%',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontFamily: 'inherit',
-          }}>‹</button>
-          <button onClick={onEditar} style={{
-            background: 'rgba(245,239,230,0.1)', border: 'none', color: 'var(--sage-light)',
-            borderRadius: 14, padding: '6px 14px', fontSize: 10, cursor: 'pointer',
-            letterSpacing: '0.2em', textTransform: 'uppercase', fontWeight: 700,
-            fontFamily: 'inherit',
-          }}>✏️ Editar</button>
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-          <Avatar amigo={amigo} size={86} />
-          <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--sage-light)', letterSpacing: '0.06em' }}>{amigo.nombre}</div>
-          {amigo.fecha_nacimiento && (
-            <div style={{ fontSize: 10, color: 'rgba(245,239,230,0.55)', letterSpacing: '0.2em', textTransform: 'uppercase', fontWeight: 600 }}>
-              🎂 {new Date(amigo.fecha_nacimiento).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}
-            </div>
-          )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <button onClick={onBack} style={{
+            background: 'rgba(245,239,230,0.12)', border: 'none', borderRadius: '50%',
+            width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: 'var(--sage-light)', cursor: 'pointer', fontFamily: 'inherit',
+          }}>
+            <ArrowLeft size={18} />
+          </button>
+          <div>
+            <h1 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--sage-light)', letterSpacing: '0.15em', textTransform: 'uppercase' }}>📊 Estadísticas</h1>
+            <p style={{ margin: '4px 0 0', fontSize: 9, color: 'rgba(245,239,230,0.55)', letterSpacing: '0.2em', textTransform: 'uppercase', fontWeight: 600 }}>Vuestra historia en números</p>
+          </div>
         </div>
       </div>
 
       <div style={{ padding: 16 }}>
 
-        {/* ESTADÍSTICAS */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 16 }}>
-          <div style={{ ...card, padding: 14, textAlign: 'center', marginBottom: 0 }}>
-            <div style={{ fontSize: 26, fontWeight: 300, color: 'var(--sage-dark)' }}>{conciertos.length}</div>
-            <div style={{ fontSize: 9, color: 'var(--text-secondary)', marginTop: 4, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase' }}>Conciertos</div>
-          </div>
-          <div style={{ ...card, padding: 14, textAlign: 'center', marginBottom: 0 }}>
-            <div style={{ fontSize: 26, fontWeight: 300, color: 'var(--sage-dark)' }}>{Object.keys(ciudades).length}</div>
-            <div style={{ fontSize: 9, color: 'var(--text-secondary)', marginTop: 4, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase' }}>Ciudades</div>
-          </div>
-          <div style={{ ...card, padding: 14, textAlign: 'center', marginBottom: 0 }}>
-            <div style={{ fontSize: 26, fontWeight: 300, color: 'var(--sage-dark)' }}>{Object.keys(conciertosPerYear).length}</div>
-            <div style={{ fontSize: 9, color: 'var(--text-secondary)', marginTop: 4, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase' }}>Años</div>
-          </div>
+        {/* HERO STATS */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+          <HeroCard icon={<Music2 size={14} />} valor={stats.totalConciertos} label='Conciertos' />
+          <HeroCard icon={<MapPin size={14} />} valor={stats.totalCiudades} label='Ciudades' />
+          <HeroCard icon={<Euro size={14} />} valor={formatEuro(stats.totalInvertido)} label='Invertido' isText />
+          <HeroCard icon={<Calendar size={14} />} valor={stats.anoMasActivo || '—'} label={stats.anoMasActivo ? stats.maxConciertosAno + ' conciertos' : 'Sin datos'} isText />
         </div>
 
-        {/* CONCIERTOS POR AÑO */}
-        {Object.keys(conciertosPerYear).length > 0 && (
+        {/* GRÁFICA POR AÑO */}
+        {stats.datosPorAno.length > 0 && (
           <div style={card}>
-            <div style={tituloSeccion}>Conciertos por año</div>
-            {Object.entries(conciertosPerYear).sort((a, b) => b[0] - a[0]).map(([year, count]) => (
-              <div key={year} style={{ marginBottom: 10 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '0.04em' }}>{year}</span>
-                  <span style={{ fontSize: 11, color: 'var(--sage-dark)', fontWeight: 700, letterSpacing: '0.05em' }}>{count} concierto{count > 1 ? 's' : ''}</span>
-                </div>
-                <div style={{
-                  height: 8, borderRadius: 4,
-                  background: 'var(--bg)',
-                  boxShadow: 'inset 2px 2px 4px var(--shadow-dark), inset -2px -2px 4px var(--shadow-light)',
-                  overflow: 'hidden',
-                }}>
-                  <div style={{
-                    height: '100%',
-                    background: 'linear-gradient(90deg, var(--sage), var(--sage-dark))',
-                    borderRadius: 4,
-                    width: \`\${(count / Math.max(...Object.values(conciertosPerYear))) * 100}%\`,
-                    transition: 'width 0.6s ease',
-                  }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* CIUDAD FAVORITA */}
-        {ciudadFavorita && (
-          <div style={card}>
-            <div style={tituloSeccion}>Ciudad más visitada</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-              <div style={{
-                fontSize: 26, width: 50, height: 50,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: 'linear-gradient(145deg, var(--sage-light), var(--sage))',
-                borderRadius: '50%',
-                boxShadow: '3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light)',
-              }}>📍</div>
-              <div>
-                <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '0.04em' }}>{ciudadFavorita[0]}</div>
-                <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2, letterSpacing: '0.04em' }}>{ciudadFavorita[1]} concierto{ciudadFavorita[1] > 1 ? 's' : ''}</div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* HISTORIAL */}
-        {conciertos.length > 0 && (() => {
-          const hoy = new Date()
-          hoy.setHours(0, 0, 0, 0)
-          return (
-            <div style={card}>
-              <div style={tituloSeccion}>Historial</div>
-              {conciertos.sort((a, b) => new Date(b.fecha) - new Date(a.fecha)).map(c => {
-                const fechaConcierto = new Date(c.fecha)
-                fechaConcierto.setHours(0, 0, 0, 0)
-                const pasado = fechaConcierto < hoy
+            <h2 style={tituloSeccion}>
+              <TrendingUp size={14} />
+              Conciertos por año
+            </h2>
+            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', height: 160, padding: '8px 0', gap: 10 }}>
+              {stats.datosPorAno.map(({ ano, cantidad }) => {
+                const altura = stats.maxAno > 0 ? (cantidad / stats.maxAno) * 100 : 0
                 return (
-                  <div key={c.id} style={{
-                    display: 'flex', justifyContent: 'space-between',
-                    padding: '8px 0', borderBottom: '0.5px solid var(--bg-dark)',
-                    opacity: pasado ? 0.55 : 1,
-                  }}>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '0.03em' }}>{c.artista}</span>
-                    <span style={{ fontSize: 11, color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>{new Date(c.fecha).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                  <div key={ano} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%' }}>
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', width: '100%' }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--sage-dark)', textAlign: 'center', marginBottom: 6 }}>
+                        {cantidad}
+                      </div>
+                      <div style={{
+                        background: 'linear-gradient(180deg, var(--sage), var(--sage-dark))',
+                        height: altura + '%',
+                        minHeight: cantidad > 0 ? 8 : 2,
+                        borderRadius: '6px 6px 0 0',
+                        transition: 'height 0.6s ease',
+                        boxShadow: '2px 2px 4px var(--shadow-dark)',
+                      }} />
+                    </div>
+                    <div style={{ fontSize: 10, color: 'var(--text-secondary)', marginTop: 8, fontWeight: 700, letterSpacing: '0.1em' }}>{ano}</div>
                   </div>
                 )
               })}
             </div>
-          )
-        })()}
-
-        {/* GUSTOS MUSICALES */}
-        <div style={card}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-            <div style={tituloSeccion}>Gustos musicales</div>
-            <button onClick={() => setEditandoGustos(!editandoGustos)} style={{
-              background: 'none', border: 'none', fontSize: 10, color: 'var(--sage-dark)',
-              cursor: 'pointer', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase',
-              fontFamily: 'inherit',
-            }}>
-              {editandoGustos ? 'Cancelar' : '✏️ Editar'}
-            </button>
           </div>
+        )}
 
-          {!editandoGustos && (
-            <div>
-              {artistas.length === 0 && generos.length === 0 && (
-                <div style={{ fontSize: 12, color: 'var(--text-secondary)', textAlign: 'center', padding: '10px 0', letterSpacing: '0.05em' }}>Sin gustos registrados todavía</div>
-              )}
-              {artistas.length > 0 && (
-                <div style={{ marginBottom: 14 }}>
-                  <div style={{ fontSize: 9, color: 'var(--text-secondary)', marginBottom: 8, letterSpacing: '0.25em', textTransform: 'uppercase', fontWeight: 700 }}>Artistas favoritos</div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                    {artistas.map((a, i) => (
-                      <span key={i} style={{
-                        background: 'var(--bg)', color: 'var(--text-primary)',
-                        borderRadius: 20, padding: '6px 12px', fontSize: 11, fontWeight: 600,
-                        letterSpacing: '0.04em',
-                        boxShadow: '3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light)',
-                      }}>🎵 {a}</span>
-                    ))}
+        {/* RANKING */}
+        {stats.ranking.length > 0 && (
+          <div style={card}>
+            <h2 style={tituloSeccion}>
+              <Trophy size={14} />
+              Ranking de asistencia
+            </h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {stats.ranking.map((amigo, idx) => {
+                const porcentaje = stats.maxRanking > 0 ? (amigo.conciertos / stats.maxRanking) * 100 : 0
+                const medalla = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : null
+                return (
+                  <div key={amigo.id} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ width: 24, textAlign: 'center', fontSize: 16 }}>
+                      {medalla || <span style={{ color: 'var(--text-secondary)', fontSize: 12, fontWeight: 700 }}>{idx + 1}</span>}
+                    </div>
+                    <Avatar amigo={amigo} size={36} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 6, letterSpacing: '0.04em' }}>{amigo.nombre}</div>
+                      <div style={{
+                        height: 8, borderRadius: 4,
+                        background: 'var(--bg)',
+                        boxShadow: 'inset 2px 2px 4px var(--shadow-dark), inset -2px -2px 4px var(--shadow-light)',
+                        overflow: 'hidden',
+                      }}>
+                        <div style={{
+                          height: '100%',
+                          width: porcentaje + '%',
+                          background: amigo.color || 'var(--sage-dark)',
+                          borderRadius: 4,
+                          transition: 'width 0.6s ease',
+                        }} />
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--sage-dark)', minWidth: 26, textAlign: 'right' }}>
+                      {amigo.conciertos}
+                    </div>
                   </div>
-                </div>
-              )}
-              {generos.length > 0 && (
-                <div>
-                  <div style={{ fontSize: 9, color: 'var(--text-secondary)', marginBottom: 8, letterSpacing: '0.25em', textTransform: 'uppercase', fontWeight: 700 }}>Géneros favoritos</div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                    {generos.map((g, i) => (
-                      <span key={i} style={{
-                        background: 'linear-gradient(145deg, var(--sage-light), var(--sage))',
-                        color: 'var(--warm-grey)',
-                        borderRadius: 20, padding: '6px 12px', fontSize: 11, fontWeight: 700,
-                        letterSpacing: '0.04em',
-                        boxShadow: '3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light)',
-                      }}>🎸 {g}</span>
-                    ))}
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* TOP CIUDADES */}
+        {stats.topCiudades.length > 0 && (
+          <div style={card}>
+            <h2 style={tituloSeccion}>
+              <MapPin size={14} />
+              Ciudades visitadas
+            </h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {stats.topCiudades.map(({ ciudad, cantidad }, idx) => (
+                <div key={ciudad} style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '11px 14px',
+                  background: idx === 0
+                    ? 'linear-gradient(145deg, var(--sage-light), var(--sage))'
+                    : 'var(--bg)',
+                  borderRadius: 12,
+                  boxShadow: idx === 0
+                    ? '3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light)'
+                    : 'inset 2px 2px 4px var(--shadow-dark), inset -2px -2px 4px var(--shadow-light)',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ fontSize: 14 }}>📍</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: idx === 0 ? 'var(--warm-grey)' : 'var(--text-primary)', letterSpacing: '0.04em' }}>{ciudad}</span>
                   </div>
+                  <span style={{
+                    fontSize: 11, fontWeight: 700,
+                    color: idx === 0 ? 'var(--warm-grey)' : 'var(--sage-dark)',
+                    letterSpacing: '0.05em',
+                  }}>
+                    {cantidad} {cantidad === 1 ? 'visita' : 'visitas'}
+                  </span>
                 </div>
-              )}
+              ))}
             </div>
-          )}
+          </div>
+        )}
 
-          {editandoGustos && (
-            <div>
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 9, color: 'var(--text-secondary)', marginBottom: 10, letterSpacing: '0.25em', textTransform: 'uppercase', fontWeight: 700 }}>Artistas favoritos</div>
-                <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
-                  <input value={nuevoArtista} onChange={e => setNuevoArtista(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && añadirArtista()}
-                    placeholder='Ej: The Beatles' style={inputStyle} />
-                  <button onClick={añadirArtista} style={{
-                    padding: '8px 16px', borderRadius: 12, border: 'none',
-                    background: 'linear-gradient(145deg, var(--sage-light), var(--sage-dark))',
-                    color: 'var(--warm-grey)', fontSize: 16, fontWeight: 700, cursor: 'pointer',
-                    boxShadow: '3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light)',
-                    fontFamily: 'inherit',
-                  }}>+</button>
-                </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {artistas.map((a, i) => (
-                    <span key={i} style={{
-                      background: 'var(--bg)', color: 'var(--text-primary)',
-                      borderRadius: 20, padding: '6px 12px', fontSize: 11, fontWeight: 600,
-                      letterSpacing: '0.04em',
-                      boxShadow: '3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light)',
-                      display: 'flex', alignItems: 'center', gap: 8,
-                    }}>
-                      🎵 {a}
-                      <button onClick={() => eliminarArtista(i)} style={{
-                        background: 'none', border: 'none', color: 'var(--text-secondary)',
-                        cursor: 'pointer', fontSize: 12, padding: 0, fontFamily: 'inherit',
-                      }}>✕</button>
-                    </span>
-                  ))}
-                </div>
+        {/* CURIOSIDADES */}
+        <div style={card}>
+          <h2 style={tituloSeccion}>✨ Curiosidades del grupo</h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+
+            {stats.artistaTop && (
+              <CuriosidadCard
+                emoji='🎤'
+                titulo='Artista más visto'
+                valor={stats.artistaTop[0]}
+                detalle={stats.artistaTop[1] + ' ' + (stats.artistaTop[1] === 1 ? 'concierto' : 'conciertos')}
+              />
+            )}
+
+            {stats.conciertoMasCaro && (
+              <CuriosidadCard
+                emoji='🎟'
+                titulo='Entrada más cara'
+                valor={stats.conciertoMasCaro.artista}
+                detalle={formatEuro(stats.conciertoMasCaro.precio) + ' · ' + (stats.conciertoMasCaro.ciudad || '')}
+              />
+            )}
+
+            {stats.mesFavorito && (
+              <CuriosidadCard
+                emoji='📅'
+                titulo='Mes favorito del grupo'
+                valor={stats.mesFavorito.nombre}
+                detalle={stats.mesFavorito.cantidad + ' ' + (stats.mesFavorito.cantidad === 1 ? 'concierto' : 'conciertos') + ' en este mes'}
+              />
+            )}
+
+            {stats.conciertero && (
+              <CuriosidadCard
+                emoji='🏆'
+                titulo='El concertero del grupo'
+                valor={stats.conciertero.nombre}
+                detalle={stats.conciertero.conciertos + ' ' + (stats.conciertero.conciertos === 1 ? 'concierto' : 'conciertos') + ' a sus espaldas'}
+              />
+            )}
+
+            {stats.totalConciertos === 0 && (
+              <div style={{ padding: 22, textAlign: 'center', color: 'var(--text-secondary)', fontSize: 13, letterSpacing: '0.04em' }}>
+                Aún no hay conciertos pasados registrados.<br />
+                ¡Vamos a por el primero! 🎸
               </div>
-
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 9, color: 'var(--text-secondary)', marginBottom: 10, letterSpacing: '0.25em', textTransform: 'uppercase', fontWeight: 700 }}>Géneros favoritos</div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {GENEROS.map(g => (
-                    <span key={g} onClick={() => toggleGenero(g)} style={{
-                      borderRadius: 20, padding: '6px 12px', fontSize: 11, fontWeight: 700, cursor: 'pointer',
-                      letterSpacing: '0.04em',
-                      background: generos.includes(g)
-                        ? 'linear-gradient(145deg, var(--sage-light), var(--sage))'
-                        : 'var(--bg)',
-                      color: generos.includes(g) ? 'var(--warm-grey)' : 'var(--text-secondary)',
-                      boxShadow: generos.includes(g)
-                        ? '3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light)'
-                        : 'inset 2px 2px 4px var(--shadow-dark), inset -2px -2px 4px var(--shadow-light)',
-                      transition: 'all 0.15s',
-                    }}>{g}</span>
-                  ))}
-                </div>
-              </div>
-
-              <button onClick={guardarGustos} disabled={guardando} style={{
-                width: '100%', padding: 14, borderRadius: 14, border: 'none',
-                background: 'linear-gradient(145deg, var(--sage-light), var(--sage-dark))',
-                color: 'var(--warm-grey)', fontSize: 11, fontWeight: 700, cursor: 'pointer',
-                letterSpacing: '0.2em', textTransform: 'uppercase',
-                boxShadow: '4px 4px 8px var(--shadow-dark), -4px -4px 8px var(--shadow-light)',
-                fontFamily: 'inherit',
-              }}>{guardando ? 'Guardando...' : 'Guardar'}</button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
       </div>
     </div>
   )
 }
+
+function HeroCard({ icon, valor, label, isText }) {
+  return (
+    <div style={{
+      background: 'var(--bg)', borderRadius: 18, padding: 14,
+      boxShadow: '6px 6px 12px var(--shadow-dark), -6px -6px 12px var(--shadow-light)',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--sage-dark)', marginBottom: 8 }}>
+        {icon}
+        <span style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.2em' }}>
+          {label}
+        </span>
+      </div>
+      <div style={{
+        fontSize: isText ? 18 : 26,
+        fontWeight: 300,
+        color: 'var(--sage-dark)',
+        lineHeight: 1.1,
+        letterSpacing: '0.02em',
+      }}>
+        {valor}
+      </div>
+    </div>
+  )
+}
+
+function CuriosidadCard({ emoji, titulo, valor, detalle }) {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 14,
+      padding: 14,
+      background: 'var(--bg)',
+      borderRadius: 14,
+      boxShadow: 'inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light)',
+    }}>
+      <div style={{
+        fontSize: 22, width: 44, height: 44,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: 'linear-gradient(145deg, var(--sage-light), var(--sage))',
+        borderRadius: '50%',
+        boxShadow: '3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light)',
+        flexShrink: 0,
+      }}>
+        {emoji}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 9, color: 'var(--text-secondary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.22em' }}>
+          {titulo}
+        </div>
+        <div style={{
+          fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', marginTop: 4,
+          letterSpacing: '0.04em',
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
+        }}>
+          {valor}
+        </div>
+        <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 3, letterSpacing: '0.03em' }}>{detalle}</div>
+      </div>
+    </div>
+  )
+}
 `
 
-writeFileSync('src/components/FichaAmigo.jsx', fichaAmigoCode)
-console.log('✔ src/components/FichaAmigo.jsx actualizado (Fase 3B)')
+writeFileSync('src/components/EstadisticasGrupo.jsx', estadisticasCode)
+console.log('✔ src/components/EstadisticasGrupo.jsx actualizado (Fase 3C)')
