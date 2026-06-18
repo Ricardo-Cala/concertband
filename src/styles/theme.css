@@ -1,10 +1,4 @@
-import { writeFileSync, mkdirSync, readFileSync } from 'fs'
-
-// 1. Crear carpeta src/styles si no existe
-mkdirSync('src/styles', { recursive: true })
-
-// 2. Crear src/styles/theme.css con variables y utilities neumórficas
-const themeCSS = `/* ============================================
+/* ============================================
    BOLOS GRUPIIII - Tema Natural Neutral
    Neumorfismo + paleta beige/sage/warm-grey
    ============================================ */
@@ -122,45 +116,3 @@ const themeCSS = `/* ============================================
   color: var(--sage-dark);
   letter-spacing: 0.02em;
 }
-`
-writeFileSync('src/styles/theme.css', themeCSS)
-console.log('✔ src/styles/theme.css creado')
-
-// 3. Reescribir src/index.css con la nueva base
-const indexCSS = `* { box-sizing: border-box; margin: 0; padding: 0; }
-
-body {
-  font-family: var(--font-main);
-  background: var(--bg);
-  color: var(--text-primary);
-  letter-spacing: 0.02em;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-button {
-  cursor: pointer;
-  font-family: inherit;
-}
-
-input, textarea, select {
-  font-family: inherit;
-}
-`
-writeFileSync('src/index.css', indexCSS)
-console.log('✔ src/index.css reescrito')
-
-// 4. Añadir import del theme.css en main.jsx (antes de index.css)
-let main = readFileSync('src/main.jsx', 'utf8')
-if (!main.includes('./styles/theme.css')) {
-  main = main.replace(
-    `import './index.css'`,
-    `import './styles/theme.css'\nimport './index.css'`
-  )
-  writeFileSync('src/main.jsx', main)
-  console.log('✔ src/main.jsx actualizado con import del theme')
-} else {
-  console.log('• src/main.jsx ya tiene el theme importado')
-}
-
-console.log('\n✅ Fase 0 completada')
