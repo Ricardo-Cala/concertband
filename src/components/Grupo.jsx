@@ -33,46 +33,89 @@ const formatCumple = (fecha) => {
 
 const colores = ['#534AB7','#0F6E56','#993C1D','#185FA5','#993556','#3B6D11','#BA7517','#D85A30','#1D9E75']
 
+const inputStyle = {
+  width: '100%',
+  padding: '11px 14px',
+  borderRadius: 12,
+  border: 'none',
+  background: 'var(--bg)',
+  boxShadow: 'inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light)',
+  fontSize: 14,
+  color: 'var(--text-primary)',
+  fontFamily: 'inherit',
+  outline: 'none',
+}
+
+const labelStyle = {
+  fontSize: 10,
+  color: 'var(--text-secondary)',
+  display: 'block',
+  marginBottom: 8,
+  fontWeight: 700,
+  letterSpacing: '0.2em',
+  textTransform: 'uppercase',
+}
+
+const sageBtn = {
+  background: 'linear-gradient(145deg, var(--sage-light), var(--sage-dark))',
+  color: 'var(--warm-grey)',
+  border: 'none',
+  borderRadius: 14,
+  padding: '12px 18px',
+  fontSize: 11,
+  fontWeight: 700,
+  cursor: 'pointer',
+  letterSpacing: '0.2em',
+  textTransform: 'uppercase',
+  boxShadow: '4px 4px 8px var(--shadow-dark), -4px -4px 8px var(--shadow-light)',
+  fontFamily: 'inherit',
+}
+
 function FormAmigo({ f, setF, onGuardar, onCancelar, titulo, avatar }) {
   return (
     <div style={{ padding: 16 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <h2 style={{ fontSize: 16, fontWeight: 500 }}>{titulo}</h2>
-        <button onClick={onCancelar} style={{ background: 'none', border: 'none', fontSize: 20, color: '#888', cursor: 'pointer' }}>✕</button>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
+        <h2 style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.25em', textTransform: 'uppercase', color: 'var(--text-primary)' }}>{titulo}</h2>
+        <button onClick={onCancelar} style={{
+          background: 'var(--bg)', border: 'none', borderRadius: '50%',
+          width: 36, height: 36, fontSize: 16, color: 'var(--text-secondary)',
+          cursor: 'pointer', fontFamily: 'inherit',
+          boxShadow: '3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light)',
+        }}>✕</button>
       </div>
 
       {avatar}
 
-      <div style={{ background: 'white', borderRadius: 12, padding: 16, marginBottom: 12 }}>
-        <div style={{ marginBottom: 12 }}>
-          <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 4 }}>Nombre *</label>
+      <div style={{
+        background: 'var(--bg)', borderRadius: 20, padding: 18, marginBottom: 14,
+        boxShadow: '6px 6px 12px var(--shadow-dark), -6px -6px 12px var(--shadow-light)',
+      }}>
+        <div style={{ marginBottom: 16 }}>
+          <label style={labelStyle}>Nombre *</label>
           <input value={f.nombre} onChange={e => setF(x => ({ ...x, nombre: e.target.value }))}
-            placeholder='Ej: Bárbara'
-            style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #ddd', fontSize: 14 }} />
+            placeholder='Ej: Bárbara' style={inputStyle} />
         </div>
 
-        <div style={{ marginBottom: 12 }}>
-          <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 4 }}>Iniciales *</label>
+        <div style={{ marginBottom: 16 }}>
+          <label style={labelStyle}>Iniciales *</label>
           <input value={f.iniciales} onChange={e => setF(x => ({ ...x, iniciales: e.target.value.slice(0,2) }))}
-            placeholder='Ej: Bá' maxLength={2}
-            style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #ddd', fontSize: 14 }} />
+            placeholder='Ej: Bá' maxLength={2} style={inputStyle} />
         </div>
 
-        <div style={{ marginBottom: 12 }}>
-          <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 8 }}>Fecha de cumpleaños</label>
-          <div style={{ display: 'grid', gridTemplateColumns: '70px 1fr 80px', gap: 6 }}>
+        <div style={{ marginBottom: 16 }}>
+          <label style={labelStyle}>Fecha de cumpleaños</label>
+          <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr 90px', gap: 8 }}>
             <input
               value={f.dia}
               onChange={e => {
                 const v = e.target.value.replace(/[^0-9]/g,'')
                 if (v === '' || (parseInt(v) >= 1 && parseInt(v) <= 31)) setF(x => ({ ...x, dia: v }))
               }}
-              placeholder='Día'
-              inputMode='numeric'
-              style={{ padding: '8px 6px', borderRadius: 8, border: '1px solid #ddd', fontSize: 14, textAlign: 'center' }}
+              placeholder='Día' inputMode='numeric'
+              style={{ ...inputStyle, textAlign: 'center', padding: '11px 6px' }}
             />
             <select value={f.mes} onChange={e => setF(x => ({ ...x, mes: e.target.value }))}
-              style={{ padding: '8px 6px', borderRadius: 8, border: '1px solid #ddd', fontSize: 13, background: 'white' }}>
+              style={{ ...inputStyle, padding: '11px 10px' }}>
               <option value=''>Mes</option>
               {MESES.map((m,i) => <option key={i} value={String(i+1)}>{m}</option>)}
             </select>
@@ -82,36 +125,35 @@ function FormAmigo({ f, setF, onGuardar, onCancelar, titulo, avatar }) {
                 const v = e.target.value.replace(/[^0-9]/g,'')
                 setF(x => ({ ...x, anio: v.slice(0,4) }))
               }}
-              placeholder='Año'
-              inputMode='numeric'
-              style={{ padding: '8px 6px', borderRadius: 8, border: '1px solid #ddd', fontSize: 14, textAlign: 'center' }}
+              placeholder='Año' inputMode='numeric'
+              style={{ ...inputStyle, textAlign: 'center', padding: '11px 6px' }}
             />
           </div>
           {f.dia && f.mes && f.anio && f.anio.length === 4 && (
-            <div style={{ fontSize: 12, color: '#888', marginTop: 6 }}>
+            <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 10, letterSpacing: '0.05em' }}>
               🎂 {f.dia} de {MESES[parseInt(f.mes)-1]} de {f.anio}
             </div>
           )}
         </div>
 
         <div>
-          <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 8 }}>Color del avatar</label>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <label style={labelStyle}>Color del avatar</label>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             {colores.map(c => (
               <div key={c} onClick={() => setF(x => ({ ...x, color: c }))} style={{
-                width: 32, height: 32, borderRadius: '50%', background: c, cursor: 'pointer',
-                border: f.color === c ? '3px solid #1a1a2e' : '3px solid transparent',
+                width: 36, height: 36, borderRadius: '50%', background: c, cursor: 'pointer',
+                border: f.color === c ? '3px solid var(--warm-grey)' : '3px solid transparent',
+                boxShadow: '2px 2px 5px var(--shadow-dark), -2px -2px 5px var(--shadow-light)',
+                transition: 'all 0.15s',
               }} />
             ))}
           </div>
         </div>
       </div>
 
-      <button onClick={onGuardar} style={{
-        width: '100%', padding: 12, borderRadius: 10,
-        background: '#7F77DD', color: 'white', border: 'none',
-        fontSize: 15, fontWeight: 500, cursor: 'pointer'
-      }}>Guardar</button>
+      <button onClick={onGuardar} style={{ ...sageBtn, width: '100%', padding: 14, borderRadius: 16, fontSize: 12 }}>
+        Guardar
+      </button>
     </div>
   )
 }
@@ -194,19 +236,21 @@ export default function Grupo({ amigos, onActualizado, onAbrirEstadisticas }) {
       onCancelar={() => setEditando(null)}
       titulo='Editar amigo'
       avatar={
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 18 }}>
           <div style={{ position: 'relative', cursor: 'pointer' }} onClick={() => fileRefs.current[editando.id]?.click()}>
             <Avatar amigo={{ ...editando, ...form }} size={96} />
             <div style={{
               position: 'absolute', bottom: 0, right: 0,
-              width: 26, height: 26, borderRadius: '50%',
-              background: '#7F77DD', border: '2px solid white',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12
+              width: 30, height: 30, borderRadius: '50%',
+              background: 'linear-gradient(145deg, var(--sage-light), var(--sage-dark))',
+              border: '3px solid var(--bg)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13,
+              boxShadow: '2px 2px 5px var(--shadow-dark)',
             }}>📷</div>
             <input ref={el => fileRefs.current[editando.id] = el} type='file' accept='image/*'
               style={{ display: 'none' }} onChange={e => subirFoto(editando, e.target.files[0])} />
           </div>
-          {subiendo && <div style={{ textAlign: 'center', fontSize: 12, color: '#7F77DD', marginTop: 8 }}>Subiendo foto...</div>}
+          {subiendo && <div style={{ textAlign: 'center', fontSize: 10, color: 'var(--sage-dark)', marginTop: 10, letterSpacing: '0.2em', textTransform: 'uppercase', fontWeight: 700 }}>Subiendo foto...</div>}
         </div>
       }
     />
@@ -220,37 +264,42 @@ export default function Grupo({ amigos, onActualizado, onAbrirEstadisticas }) {
 
   return (
     <div style={{ padding: 16 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-        <div style={{ fontSize: 13, fontWeight: 500, color: '#888' }}>GRUPO · {amigos.length}</div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '0.25em', textTransform: 'uppercase' }}>Grupo · {amigos.length}</div>
         <button onClick={() => setMostrarNuevo(true)} style={{
-          background: '#7F77DD', color: 'white', border: 'none',
-          borderRadius: 20, padding: '6px 14px', fontSize: 12, fontWeight: 500, cursor: 'pointer'
+          background: 'linear-gradient(145deg, var(--sage-light), var(--sage-dark))',
+          color: 'var(--warm-grey)', border: 'none', borderRadius: 20,
+          padding: '7px 16px', fontSize: 10, fontWeight: 700, cursor: 'pointer',
+          letterSpacing: '0.15em', textTransform: 'uppercase',
+          boxShadow: '3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light)',
+          fontFamily: 'inherit',
         }}>+ Añadir</button>
       </div>
 
       {/* TARJETA DE ESTADÍSTICAS DEL GRUPO */}
       <div
         onClick={onAbrirEstadisticas}
+        className='card-tap'
         style={{
-          background: 'linear-gradient(135deg, #7F77DD 0%, #5d54b8 100%)',
-          borderRadius: 14,
-          padding: 14,
-          marginBottom: 14,
-          color: 'white',
+          background: 'linear-gradient(135deg, var(--warm-grey), #4A4137)',
+          borderRadius: 20,
+          padding: 16,
+          marginBottom: 16,
+          color: 'var(--bg-light)',
           cursor: 'pointer',
-          boxShadow: '0 4px 12px rgba(127,119,221,0.3)',
+          boxShadow: '0 6px 16px rgba(60,48,40,0.25)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: 12
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <div style={{
-            background: 'rgba(255,255,255,0.2)',
+            background: 'rgba(245,239,230,0.12)',
             borderRadius: '50%',
-            width: 44,
-            height: 44,
+            width: 46,
+            height: 46,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -260,26 +309,30 @@ export default function Grupo({ amigos, onActualizado, onAbrirEstadisticas }) {
             📊
           </div>
           <div>
-            <div style={{ fontSize: 15, fontWeight: 600 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--sage-light)', letterSpacing: '0.04em' }}>
               Estadísticas del grupo
             </div>
-            <div style={{ fontSize: 12, opacity: 0.9, marginTop: 2 }}>
+            <div style={{ fontSize: 10, color: 'rgba(245,239,230,0.55)', marginTop: 4, letterSpacing: '0.18em', textTransform: 'uppercase', fontWeight: 600 }}>
               Vuestra historia en números
             </div>
           </div>
         </div>
-        <div style={{ fontSize: 24, opacity: 0.8 }}>›</div>
+        <div style={{ fontSize: 24, color: 'rgba(245,239,230,0.6)' }}>›</div>
       </div>
 
       {proximosCumples.length > 0 && (
-        <div style={{ background: '#FAEEDA', borderRadius: 12, padding: 12, marginBottom: 14 }}>
-          <div style={{ fontSize: 11, fontWeight: 500, color: '#633806', marginBottom: 8 }}>🎂 CUMPLEAÑOS PRÓXIMOS</div>
+        <div style={{
+          background: 'linear-gradient(145deg, var(--bg-light), var(--bg-dark))',
+          borderRadius: 18, padding: 16, marginBottom: 16,
+          boxShadow: '6px 6px 12px var(--shadow-dark), -6px -6px 12px var(--shadow-light)',
+        }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 12, letterSpacing: '0.25em', textTransform: 'uppercase' }}>🎂 Cumpleaños próximos</div>
           {proximosCumples.map(a => (
-            <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-              <Avatar amigo={a} size={29} />
-              <span style={{ fontSize: 13, flex: 1, color: '#633806' }}>{a.nombre}</span>
-              <span style={{ fontSize: 12, color: '#854F0B', fontWeight: 500 }}>
-                {a.dias === 0 ? '¡Hoy! 🎉' : a.dias === 1 ? 'Mañana' : `en ${a.dias} días`}
+            <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+              <Avatar amigo={a} size={30} />
+              <span style={{ fontSize: 13, flex: 1, color: 'var(--text-primary)', fontWeight: 600, letterSpacing: '0.03em' }}>{a.nombre}</span>
+              <span style={{ fontSize: 11, color: 'var(--sage-dark)', fontWeight: 700, letterSpacing: '0.05em' }}>
+                {a.dias === 0 ? '¡Hoy! 🎉' : a.dias === 1 ? 'Mañana' : 'en ' + a.dias + ' días'}
               </span>
             </div>
           ))}
@@ -290,28 +343,26 @@ export default function Grupo({ amigos, onActualizado, onAbrirEstadisticas }) {
         const dias = diasParaCumple(a.fecha_nacimiento)
         const cumpleProximo = dias !== null && dias <= 30
         return (
-          <div key={a.id} onClick={() => abrirFicha(a)} style={{
-            background: 'white', borderRadius: 12, padding: '12px 14px',
-            marginBottom: 8, display: 'flex', alignItems: 'center', gap: 12,
-            cursor: 'pointer', border: '1px solid #eee',
-          }}
-            onMouseEnter={e => e.currentTarget.style.background = '#f8f8f8'}
-            onMouseLeave={e => e.currentTarget.style.background = 'white'}
-          >
+          <div key={a.id} onClick={() => abrirFicha(a)} className='fade-in-up card-tap' style={{
+            background: 'var(--bg)', borderRadius: 18, padding: '14px 16px',
+            marginBottom: 12, display: 'flex', alignItems: 'center', gap: 14,
+            cursor: 'pointer',
+            boxShadow: '6px 6px 12px var(--shadow-dark), -6px -6px 12px var(--shadow-light)',
+          }}>
             <div style={{ flexShrink: 0 }}>
               <Avatar amigo={a} size={53} />
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--color-text-primary)' }}>{a.nombre}</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '0.04em' }}>{a.nombre}</div>
               {a.fecha_nacimiento && (
-                <div style={{ fontSize: 11, color: cumpleProximo ? '#854F0B' : '#888', marginTop: 2 }}>
+                <div style={{ fontSize: 11, color: cumpleProximo ? 'var(--sage-dark)' : 'var(--text-secondary)', marginTop: 4, letterSpacing: '0.03em' }}>
                   🎂 {formatCumple(a.fecha_nacimiento)}
-                  {cumpleProximo && <span style={{ fontWeight: 500 }}> · {dias === 0 ? '¡Hoy!' : dias === 1 ? 'mañana' : `en ${dias} días`}</span>}
+                  {cumpleProximo && <span style={{ fontWeight: 700 }}> · {dias === 0 ? '¡Hoy!' : dias === 1 ? 'mañana' : 'en ' + dias + ' días'}</span>}
                 </div>
               )}
-              {subiendo === a.id && <div style={{ fontSize: 11, color: '#7F77DD', marginTop: 2 }}>Subiendo foto...</div>}
+              {subiendo === a.id && <div style={{ fontSize: 10, color: 'var(--sage-dark)', marginTop: 4, letterSpacing: '0.2em', textTransform: 'uppercase', fontWeight: 700 }}>Subiendo foto...</div>}
             </div>
-            <span style={{ color: '#ccc', fontSize: 18 }}>›</span>
+            <span style={{ color: 'var(--text-secondary)', fontSize: 20 }}>›</span>
           </div>
         )
       })}
