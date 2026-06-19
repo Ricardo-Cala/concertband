@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Plane, Car, Bus, TrainFront, FileText, RefreshCw, Paperclip, MapPin } from 'lucide-react'
 import { supabase } from '../supabase'
 import Avatar from './Avatar'
 
@@ -231,7 +232,7 @@ export default function FichaViaje({ tipo, datos, amigos, conciertoId, onCerrar,
                     color: 'var(--warm-grey)', fontSize: 11, fontWeight: 700, cursor: 'pointer',
                     letterSpacing: '0.1em', fontFamily: 'inherit',
                     boxShadow: '3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light)',
-                  }}>📄 Ver billetes</button>
+                  }}><FileText size={14} style={{marginRight:4}} />Ver billetes</button>
                   <label style={{
                     padding: '12px 16px', borderRadius: 14, border: 'none',
                     background: 'var(--bg)', color: 'var(--text-secondary)', fontSize: 13, cursor: 'pointer',
@@ -277,7 +278,7 @@ export default function FichaViaje({ tipo, datos, amigos, conciertoId, onCerrar,
                 color: 'var(--warm-grey)', fontSize: 11, fontWeight: 700, cursor: 'pointer',
                 letterSpacing: '0.1em', fontFamily: 'inherit',
                 boxShadow: '3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light)',
-              }}>📍 Ver en Google Maps</button>
+              }}><MapPin size={14} style={{marginRight:4}} />Ver en Google Maps</button>
             )}
           </div>
         )}
@@ -302,7 +303,7 @@ export default function FichaViaje({ tipo, datos, amigos, conciertoId, onCerrar,
                   }}>
                     <Avatar amigo={a} size={36} />
                     <span style={{ fontSize: 13, flex: 1, fontWeight: 700, color: sel ? 'var(--warm-grey)' : 'var(--text-secondary)', letterSpacing: '0.03em' }}>{a.nombre}</span>
-                    <span style={{ fontSize: 16, color: sel ? 'var(--warm-grey)' : 'var(--text-secondary)', opacity: sel ? 1 : 0.3 }}>{sel ? '🚗' : '○'}</span>
+                    <span style={{ fontSize: 16, color: sel ? 'var(--warm-grey)' : 'var(--text-secondary)', opacity: sel ? 1 : 0.3 }}>{sel ? <Car size={16} /> : '○'}</span>
                   </div>
                 )
               })}

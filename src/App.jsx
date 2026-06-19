@@ -183,7 +183,7 @@ export default function App() {
               <span style={tagInfo}>{iconTransporte(c.transportes[0].tipo)} {c.transportes[0].tipo}</span>
             )}
             {c.hoteles?.[0] && (
-              <span style={tagInfo}>🏨 {c.hoteles[0].nombre}</span>
+              <span style={tagInfo}> {c.hoteles[0].nombre}</span>
             )}
           </div>
         </div>

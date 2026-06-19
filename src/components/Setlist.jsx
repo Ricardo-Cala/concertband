@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Music, Pencil } from 'lucide-react'
 import { supabase } from '../supabase'
 
 export default function Setlist({ concierto, onActualizado }) {
@@ -102,7 +103,7 @@ export default function Setlist({ concierto, onActualizado }) {
           cursor: 'pointer', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase',
           boxShadow: '3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light)',
           fontFamily: 'inherit',
-        }}>✏️ Editar</button>
+        }}><Pencil size={12} style={{marginRight:4}} />Editar</button>
       </div>
 
       {concierto.spotify_url ? (

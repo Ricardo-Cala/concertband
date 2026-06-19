@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import { BarChart3, Cake } from 'lucide-react'
 import { supabase } from '../supabase'
 import Avatar from './Avatar'
 import FichaAmigo from './FichaAmigo'
@@ -131,7 +132,7 @@ function FormAmigo({ f, setF, onGuardar, onCancelar, titulo, avatar }) {
           </div>
           {f.dia && f.mes && f.anio && f.anio.length === 4 && (
             <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 10, letterSpacing: '0.05em' }}>
-              🎂 {f.dia} de {MESES[parseInt(f.mes)-1]} de {f.anio}
+              ♪ {f.dia} de {MESES[parseInt(f.mes)-1]} de {f.anio}
             </div>
           )}
         </div>
@@ -326,7 +327,7 @@ export default function Grupo({ amigos, onActualizado, onAbrirEstadisticas }) {
           borderRadius: 18, padding: 16, marginBottom: 16,
           boxShadow: '6px 6px 12px var(--shadow-dark), -6px -6px 12px var(--shadow-light)',
         }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 12, letterSpacing: '0.25em', textTransform: 'uppercase' }}>🎂 Cumpleaños próximos</div>
+          <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 12, letterSpacing: '0.25em', textTransform: 'uppercase' }}>♪ Cumpleaños próximos</div>
           {proximosCumples.map(a => (
             <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
               <Avatar amigo={a} size={30} />
@@ -356,7 +357,7 @@ export default function Grupo({ amigos, onActualizado, onAbrirEstadisticas }) {
               <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '0.04em' }}>{a.nombre}</div>
               {a.fecha_nacimiento && (
                 <div style={{ fontSize: 11, color: cumpleProximo ? 'var(--sage-dark)' : 'var(--text-secondary)', marginTop: 4, letterSpacing: '0.03em' }}>
-                  🎂 {formatCumple(a.fecha_nacimiento)}
+                  ♪ {formatCumple(a.fecha_nacimiento)}
                   {cumpleProximo && <span style={{ fontWeight: 700 }}> · {dias === 0 ? '¡Hoy!' : dias === 1 ? 'mañana' : 'en ' + dias + ' días'}</span>}
                 </div>
               )}

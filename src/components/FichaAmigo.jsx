@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { MapPin, Music, Guitar, Cake, Pencil } from 'lucide-react'
 import { supabase } from '../supabase'
 import Avatar from './Avatar'
 
@@ -174,7 +175,7 @@ export default function FichaAmigo({ amigo, amigos, onCerrar, onEditar }) {
                 background: 'linear-gradient(145deg, var(--sage-light), var(--sage))',
                 borderRadius: '50%',
                 boxShadow: '3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light)',
-              }}>📍</div>
+              }}><MapPin size={22} /></div>
               <div>
                 <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '0.04em' }}>{ciudadFavorita[0]}</div>
                 <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2, letterSpacing: '0.04em' }}>{ciudadFavorita[1]} concierto{ciudadFavorita[1] > 1 ? 's' : ''}</div>
@@ -237,7 +238,7 @@ export default function FichaAmigo({ amigo, amigos, onCerrar, onEditar }) {
                         borderRadius: 20, padding: '6px 12px', fontSize: 11, fontWeight: 600,
                         letterSpacing: '0.04em',
                         boxShadow: '3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light)',
-                      }}>🎵 {a}</span>
+                      }}><Music size={12} style={{marginRight:4}} />{a}</span>
                     ))}
                   </div>
                 </div>
@@ -253,7 +254,7 @@ export default function FichaAmigo({ amigo, amigos, onCerrar, onEditar }) {
                         borderRadius: 20, padding: '6px 12px', fontSize: 11, fontWeight: 700,
                         letterSpacing: '0.04em',
                         boxShadow: '3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light)',
-                      }}>🎸 {g}</span>
+                      }}><Guitar size={12} style={{marginRight:4}} />{g}</span>
                     ))}
                   </div>
                 </div>

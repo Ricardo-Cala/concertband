@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { ArrowLeft, TrendingUp, MapPin, Euro, Calendar, Music2, Trophy } from 'lucide-react'
+import { ArrowLeft, TrendingUp, MapPin, Euro, Calendar, Music2, Trophy, Mic, Ticket, Sparkles } from 'lucide-react'
 import Avatar from './Avatar'
 
 export default function EstadisticasGrupo({ conciertos, amigos, asistentes, gastos, onBack }) {
@@ -145,7 +145,7 @@ export default function EstadisticasGrupo({ conciertos, amigos, asistentes, gast
             <ArrowLeft size={18} />
           </button>
           <div>
-            <h1 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--sage-light)', letterSpacing: '0.15em', textTransform: 'uppercase' }}>📊 Estadísticas</h1>
+            <h1 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--sage-light)', letterSpacing: '0.15em', textTransform: 'uppercase' }}>{<><TrendingUp size={14} /> Estadísticas</>}</h1>
             <p style={{ margin: '4px 0 0', fontSize: 9, color: 'rgba(245,239,230,0.55)', letterSpacing: '0.2em', textTransform: 'uppercase', fontWeight: 600 }}>Vuestra historia en números</p>
           </div>
         </div>
@@ -277,12 +277,12 @@ export default function EstadisticasGrupo({ conciertos, amigos, asistentes, gast
 
         {/* CURIOSIDADES */}
         <div style={card}>
-          <h2 style={tituloSeccion}>✨ Curiosidades del grupo</h2>
+          <h2 style={tituloSeccion}>{<><Sparkles size={14} /> Curiosidades del grupo</>}</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
 
             {stats.artistaTop && (
               <CuriosidadCard
-                emoji='🎤'
+                emoji={<Mic size={20} />}
                 titulo='Artista más visto'
                 valor={stats.artistaTop[0]}
                 detalle={stats.artistaTop[1] + ' ' + (stats.artistaTop[1] === 1 ? 'concierto' : 'conciertos')}
@@ -291,7 +291,7 @@ export default function EstadisticasGrupo({ conciertos, amigos, asistentes, gast
 
             {stats.conciertoMasCaro && (
               <CuriosidadCard
-                emoji='🎟'
+                emoji={<Ticket size={20} />}
                 titulo='Entrada más cara'
                 valor={stats.conciertoMasCaro.artista}
                 detalle={formatEuro(stats.conciertoMasCaro.precio) + ' · ' + (stats.conciertoMasCaro.ciudad || '')}
@@ -300,7 +300,7 @@ export default function EstadisticasGrupo({ conciertos, amigos, asistentes, gast
 
             {stats.mesFavorito && (
               <CuriosidadCard
-                emoji='📅'
+                emoji={<Calendar size={20} />}
                 titulo='Mes favorito del grupo'
                 valor={stats.mesFavorito.nombre}
                 detalle={stats.mesFavorito.cantidad + ' ' + (stats.mesFavorito.cantidad === 1 ? 'concierto' : 'conciertos') + ' en este mes'}
@@ -309,7 +309,7 @@ export default function EstadisticasGrupo({ conciertos, amigos, asistentes, gast
 
             {stats.conciertero && (
               <CuriosidadCard
-                emoji='🏆'
+                emoji={<Trophy size={20} />}
                 titulo='El concertero del grupo'
                 valor={stats.conciertero.nombre}
                 detalle={stats.conciertero.conciertos + ' ' + (stats.conciertero.conciertos === 1 ? 'concierto' : 'conciertos') + ' a sus espaldas'}
@@ -319,7 +319,7 @@ export default function EstadisticasGrupo({ conciertos, amigos, asistentes, gast
             {stats.totalConciertos === 0 && (
               <div style={{ padding: 22, textAlign: 'center', color: 'var(--text-secondary)', fontSize: 13, letterSpacing: '0.04em' }}>
                 Aún no hay conciertos pasados registrados.<br />
-                ¡Vamos a por el primero! 🎸
+                ¡Vamos a por el primero! ♪
               </div>
             )}
           </div>

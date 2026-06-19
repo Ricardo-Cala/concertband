@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Users, Ticket, Music, Camera, FileText, Paperclip, ClipboardPaste, Pencil, Trash2 } from 'lucide-react'
 import { supabase } from '../supabase'
 import Avatar from './Avatar'
 import Toast from './Toast'
@@ -310,7 +311,7 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
             boxShadow: subtab === t ? '3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light)' : 'none',
             fontFamily: 'inherit', transition: 'all 0.15s',
           }}>
-            {t === 'asistencia' ? '👋 Asist.' : t === 'entradas' ? '🎟 Entrad.' : t === 'setlist' ? '🎵 Setlist' : '📸 Fotos'}
+            {t === 'asistencia' ? <><Users size={12} style={{marginRight:4}} />Asist.</> : t === 'entradas' ? <><Ticket size={12} style={{marginRight:4}} />Entrad.</> : t === 'setlist' ? <><Music size={12} style={{marginRight:4}} />Setlist</> : <><Camera size={12} style={{marginRight:4}} />Fotos</>}
           </button>
         ))}
       </div>
@@ -415,7 +416,7 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
                                 padding: '5px 10px', fontSize: 10, color: 'var(--warm-grey)', cursor: 'pointer', fontWeight: 700,
                                 letterSpacing: '0.05em', fontFamily: 'inherit',
                                 boxShadow: '2px 2px 4px var(--shadow-dark), -2px -2px 4px var(--shadow-light)',
-                              }}>📄 Ver</button>
+                              }}><FileText size={12} style={{marginRight:4}} />Ver</button>
                               <button onClick={() => borrarEntrada(g)} style={{
                                 background: 'none', border: 'none', fontSize: 12, color: 'var(--text-secondary)', cursor: 'pointer'
                               }}>✕</button>
@@ -430,7 +431,7 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
                                   display: 'flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap',
                                   fontWeight: 700, fontFamily: 'inherit',
                                   boxShadow: '2px 2px 4px var(--shadow-dark), -2px -2px 4px var(--shadow-light)',
-                                }}>🎟 Subir ▾</button>
+                                }}><Ticket size={12} style={{marginRight:4}} />Subir ▾</button>
                               {menuSubirId === g.id && (
                                 <div style={{
                                   position: 'absolute', top: '110%', right: 0, zIndex: 100,
@@ -455,7 +456,7 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
                                       background: 'none', border: 'none', fontSize: 12, cursor: 'pointer',
                                       display: 'flex', alignItems: 'center', gap: 8,
                                       color: 'var(--text-primary)', fontWeight: 600, fontFamily: 'inherit',
-                                    }}>📋 Pegar imagen</button>
+                                    }}><ClipboardPaste size={12} style={{marginRight:4}} />Pegar imagen</button>
                                 </div>
                               )}
                             </div>
@@ -468,7 +469,7 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
                                 padding: '5px 10px', fontSize: 10, color: 'var(--text-secondary)', cursor: 'pointer',
                                 whiteSpace: 'nowrap', fontWeight: 700, fontFamily: 'inherit',
                                 boxShadow: '2px 2px 4px var(--shadow-dark), -2px -2px 4px var(--shadow-light)',
-                              }}>✏️ ▾</button>
+                              }}><Pencil size={12} /> ▾</button>
                             {menuEditarId === g.id && (
                               <div style={{
                                 position: 'absolute', top: '110%', right: 0, zIndex: 100,
@@ -487,7 +488,7 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
                                     background: 'none', border: 'none', fontSize: 12, cursor: 'pointer',
                                     display: 'flex', alignItems: 'center', gap: 8,
                                     color: 'var(--text-primary)', fontWeight: 600, fontFamily: 'inherit',
-                                  }}>✏️ Modificar</button>
+                                  }}><Pencil size={12} style={{marginRight:4}} />Modificar</button>
                                 <div style={{ height: 1, background: 'var(--bg-dark)' }} />
                                 <button
                                   onClick={() => {
@@ -501,7 +502,7 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
                                     background: 'none', border: 'none', fontSize: 12,
                                     color: '#B85C5C', cursor: 'pointer', fontWeight: 600,
                                     display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'inherit',
-                                  }}>🗑️ Eliminar</button>
+                                  }}><Trash2 size={12} style={{marginRight:4}} />Eliminar</button>
                               </div>
                             )}
                           </div>

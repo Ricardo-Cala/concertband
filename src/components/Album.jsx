@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { Camera, Download, Trash2 } from 'lucide-react'
 import { supabase } from '../supabase'
 
 export default function Album({ concierto }) {
@@ -66,7 +67,7 @@ export default function Album({ concierto }) {
           background: 'var(--bg)', borderRadius: 20, padding: 30, textAlign: 'center',
           boxShadow: 'inset 4px 4px 8px var(--shadow-dark), inset -4px -4px 8px var(--shadow-light)',
         }}>
-          <div style={{ fontSize: 32, marginBottom: 10 }}>📸</div>
+          <div style={{ fontSize: 32, marginBottom: 10 }}><Camera size={28} /></div>
           <div style={{ fontSize: 13, color: 'var(--text-primary)', marginBottom: 4, fontWeight: 600, letterSpacing: '0.04em' }}>Sin fotos todavía</div>
           <div style={{ fontSize: 11, color: 'var(--text-secondary)', letterSpacing: '0.04em' }}>Sé el primero en subir fotos del concierto</div>
         </div>
@@ -98,12 +99,12 @@ export default function Album({ concierto }) {
               background: 'rgba(245,239,230,0.15)', border: 'none', borderRadius: 20,
               padding: '9px 18px', color: 'var(--sage-light)', fontSize: 11, cursor: 'pointer',
               fontWeight: 700, letterSpacing: '0.1em', fontFamily: 'inherit',
-            }}>⬇️ Descargar</button>
+            }}><Download size={14} style={{marginRight:4}} />Descargar</button>
             <button onClick={() => borrarFoto(fotoGrande)} style={{
               background: 'linear-gradient(145deg, #C87070, #A85050)', border: 'none', borderRadius: 20,
               padding: '9px 18px', color: '#fff', fontSize: 11, cursor: 'pointer',
               fontWeight: 700, letterSpacing: '0.1em', fontFamily: 'inherit',
-            }}>🗑️ Eliminar</button>
+            }}><Trash2 size={14} style={{marginRight:4}} />Eliminar</button>
           </div>
         </div>
       )}
