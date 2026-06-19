@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../supabase'
 import Avatar from './Avatar'
 
-export default function FichaViaje({ tipo, datos, amigos, onCerrar, onActualizado }) {
+export default function FichaViaje({ tipo, datos, amigos, conciertoId, onCerrar, onActualizado }) {
   const [editando, setEditando] = useState(false)
   const [subiendo, setSubiendo] = useState(false)
   const [form, setForm] = useState({})
@@ -16,9 +16,7 @@ export default function FichaViaje({ tipo, datos, amigos, onCerrar, onActualizad
   }
   const tn = tipoNombre()
 
-  useEffect(() => {
-    setForm(datos || {})
-  }, [datos])
+  useEffect(() => { setForm(datos || {}) }, [datos])
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
@@ -55,9 +53,8 @@ export default function FichaViaje({ tipo, datos, amigos, onCerrar, onActualizad
     const { error: uploadError } = await supabase.storage.from('billetes').upload(path, archivo, { upsert: true })
     if (!uploadError) {
       const { data } = supabase.storage.from('billetes').getPublicUrl(path)
-      const url = data.publicUrl
-      await supabase.from('transportes').update({ billete_url: url }).eq('id', datos.id)
-      set('billete_url', url)
+      await supabase.from('transportes').update({ billete_url: data.publicUrl }).eq('id', datos.id)
+      set('billete_url', data.publicUrl)
       onActualizado()
     }
     setSubiendo(false)
@@ -65,8 +62,7 @@ export default function FichaViaje({ tipo, datos, amigos, onCerrar, onActualizad
 
   const noches = () => {
     if (!form.fecha_entrada || !form.fecha_salida) return 0
-    const diff = new Date(form.fecha_salida) - new Date(form.fecha_entrada)
-    return Math.ceil(diff / (1000 * 60 * 60 * 24))
+    return Math.ceil((new Date(form.fecha_salida) - new Date(form.fecha_entrada)) / (1000 * 60 * 60 * 24))
   }
 
   const iconTransporte = (t) => {
@@ -82,54 +78,86 @@ export default function FichaViaje({ tipo, datos, amigos, onCerrar, onActualizad
     return new Date(f).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })
   }
 
+  const inputNeu = {
+    width: '100%', padding: '11px 14px', borderRadius: 12, border: 'none',
+    background: 'var(--bg)',
+    boxShadow: 'inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light)',
+    fontSize: 14, color: 'var(--text-primary)', fontFamily: 'inherit', outline: 'none',
+    boxSizing: 'border-box',
+  }
+  const labelNeu = {
+    fontSize: 10, color: 'var(--text-secondary)', display: 'block', marginBottom: 8,
+    fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase',
+  }
+  const secTitulo = {
+    fontSize: 10, fontWeight: 700, color: 'var(--sage-dark)',
+    marginBottom: 10, letterSpacing: '0.25em', textTransform: 'uppercase',
+  }
+  const sageBtn = {
+    width: '100%', padding: 14, borderRadius: 16, border: 'none',
+    background: 'linear-gradient(145deg, var(--sage-light), var(--sage-dark))',
+    color: 'var(--warm-grey)', fontSize: 11, fontWeight: 700, cursor: 'pointer',
+    letterSpacing: '0.2em', textTransform: 'uppercase',
+    boxShadow: '4px 4px 8px var(--shadow-dark), -4px -4px 8px var(--shadow-light)',
+    fontFamily: 'inherit',
+  }
+
   const campo = (label, key, tipo = 'text', placeholder = '') => (
-    <div style={{ marginBottom: 12 }}>
-      <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 4 }}>{label}</label>
+    <div style={{ marginBottom: 14 }}>
+      <label style={labelNeu}>{label}</label>
       <input type={tipo} value={form[key] || ''} placeholder={placeholder}
-        onChange={e => set(key, e.target.value)}
-        style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #ddd', fontSize: 14, background: 'white', boxSizing: 'border-box' }} />
+        onChange={e => set(key, e.target.value)} style={inputNeu} />
     </div>
   )
 
   return (
     <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
+      position: 'fixed', inset: 0, background: 'rgba(60,48,40,0.5)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      zIndex: 200, padding: 16
+      zIndex: 200, padding: 16, backdropFilter: 'blur(4px)',
     }} onClick={onCerrar}>
       <div onClick={e => e.stopPropagation()} style={{
-        background: 'white', borderRadius: 16,
+        background: 'var(--bg)', borderRadius: 22,
         width: '100%', maxWidth: 390, maxHeight: '85vh',
-        overflowY: 'auto', padding: 20,
+        overflowY: 'auto', padding: 22,
+        boxShadow: '12px 12px 24px var(--shadow-dark), -12px -12px 24px var(--shadow-light)',
       }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <div style={{ fontSize: 16, fontWeight: 500 }}>
-            {esTransporte ? `${iconTransporte(datos?.tipo)} ${datos?.tipo || 'Transporte'}` : '🏨 Hotel'}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '0.06em' }}>
+            {esTransporte ? iconTransporte(datos?.tipo) + ' ' + (datos?.tipo || 'Transporte') : '🏨 Hotel'}
           </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <button onClick={() => setEditando(!editando)} style={{
-              background: editando ? '#EEEDFE' : 'none',
-              border: '1px solid #eee', borderRadius: 20,
-              padding: '4px 12px', fontSize: 12,
-              color: editando ? '#3C3489' : '#888', cursor: 'pointer'
+              background: editando ? 'linear-gradient(145deg, var(--sage-light), var(--sage))' : 'var(--bg)',
+              border: 'none', borderRadius: 20,
+              padding: '5px 14px', fontSize: 10, fontWeight: 700,
+              color: editando ? 'var(--warm-grey)' : 'var(--text-secondary)',
+              cursor: 'pointer', letterSpacing: '0.12em', textTransform: 'uppercase',
+              boxShadow: '2px 2px 4px var(--shadow-dark), -2px -2px 4px var(--shadow-light)',
+              fontFamily: 'inherit',
             }}>{editando ? '✕ Cancelar' : '✏️ Editar'}</button>
-            <button onClick={onCerrar} style={{ background: 'none', border: 'none', fontSize: 22, color: '#888', cursor: 'pointer' }}>✕</button>
+            <button onClick={onCerrar} style={{
+              background: 'var(--bg)', border: 'none', borderRadius: '50%',
+              width: 34, height: 34, fontSize: 15, color: 'var(--text-secondary)',
+              cursor: 'pointer', fontFamily: 'inherit',
+              boxShadow: '2px 2px 4px var(--shadow-dark), -2px -2px 4px var(--shadow-light)',
+            }}>✕</button>
           </div>
         </div>
 
         {!editando && esTransporte && datos?.tipo === 'Coche' && (
           <div>
             {(form.coches || []).length === 0 && (
-              <div style={{ textAlign: 'center', color: '#aaa', fontSize: 13, padding: 16 }}>Sin coches añadidos todavía</div>
+              <div style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: 12, padding: 18, letterSpacing: '0.05em' }}>Sin coches añadidos todavía</div>
             )}
             {(form.coches || []).map((cocheId, i) => {
               const conductor = amigos.find(a => a.id === cocheId)
               return conductor ? (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '0.5px solid #f0f0f0' }}>
-                  <Avatar amigo={conductor} size={38} />
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 0', borderBottom: '0.5px solid var(--bg-dark)' }}>
+                  <Avatar amigo={conductor} size={40} />
                   <div>
-                    <div style={{ fontSize: 11, color: '#888' }}>COCHE {i + 1}</div>
-                    <div style={{ fontSize: 14, fontWeight: 500 }}>{conductor.nombre}</div>
+                    <div style={{ fontSize: 9, color: 'var(--text-secondary)', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase' }}>Coche {i + 1}</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '0.03em' }}>{conductor.nombre}</div>
                   </div>
                 </div>
               ) : null
@@ -139,7 +167,7 @@ export default function FichaViaje({ tipo, datos, amigos, onCerrar, onActualizad
 
         {!editando && esTransporte && datos?.tipo !== 'Coche' && (
           <div>
-            <div style={{ fontSize: 11, fontWeight: 500, color: '#7F77DD', marginBottom: 8 }}>{tn.ida}</div>
+            <div style={secTitulo}>{tn.ida}</div>
             {form.compania && <InfoRow label={tn.compania} value={form.compania} />}
             {form.numero_vuelo && <InfoRow label={tn.numero} value={form.numero_vuelo} />}
             {form.fecha_salida && (
@@ -153,7 +181,7 @@ export default function FichaViaje({ tipo, datos, amigos, onCerrar, onActualizad
               } />
             )}
             {(form.numero_vuelo_vuelta || form.fecha_salida_vuelta || form.compania_vuelta) && (
-              <div style={{ marginTop: 10, marginBottom: 4, fontSize: 11, fontWeight: 500, color: '#7F77DD' }}>{tn.vuelta}</div>
+              <div style={{ ...secTitulo, marginTop: 14 }}>{tn.vuelta}</div>
             )}
             {form.compania_vuelta && <InfoRow label={tn.companiaVuelta} value={form.compania_vuelta} />}
             {form.numero_vuelo_vuelta && <InfoRow label={tn.numeroVuelta} value={form.numero_vuelo_vuelta} />}
@@ -169,19 +197,24 @@ export default function FichaViaje({ tipo, datos, amigos, onCerrar, onActualizad
             )}
             {form.comprador_id && (() => {
               const comprador = amigos.find(a => a.id === form.comprador_id || a.id === form.responsable_id)
-              return comprador ? <InfoRow label='Compró los billetes' value={comprador.nombre} /> : null
+              return comprador ? <InfoRow label='Compró billetes' value={comprador.nombre} /> : null
             })()}
 
             {(form.viajeros || []).length > 0 && (
-              <div style={{ marginTop: 12, marginBottom: 14 }}>
-                <div style={{ fontSize: 12, color: '#888', marginBottom: 8 }}>VIAJAN</div>
-                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              <div style={{ marginTop: 16, marginBottom: 16 }}>
+                <div style={{ fontSize: 9, color: 'var(--text-secondary)', marginBottom: 10, fontWeight: 700, letterSpacing: '0.25em', textTransform: 'uppercase' }}>Viajan</div>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   {(form.viajeros || []).map(id => {
                     const a = amigos.find(x => x.id === id)
                     return a ? (
-                      <div key={id} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#EEEDFE', borderRadius: 20, padding: '4px 10px' }}>
+                      <div key={id} style={{
+                        display: 'flex', alignItems: 'center', gap: 8,
+                        background: 'linear-gradient(145deg, var(--sage-light), var(--sage))',
+                        borderRadius: 20, padding: '5px 12px',
+                        boxShadow: '2px 2px 4px var(--shadow-dark), -2px -2px 4px var(--shadow-light)',
+                      }}>
                         <Avatar amigo={a} size={24} />
-                        <span style={{ fontSize: 12, color: '#3C3489' }}>{a.nombre}</span>
+                        <span style={{ fontSize: 11, color: 'var(--warm-grey)', fontWeight: 700, letterSpacing: '0.03em' }}>{a.nombre}</span>
                       </div>
                     ) : null
                   })}
@@ -189,16 +222,20 @@ export default function FichaViaje({ tipo, datos, amigos, onCerrar, onActualizad
               </div>
             )}
 
-            <div style={{ marginTop: 14 }}>
+            <div style={{ marginTop: 16 }}>
               {form.billete_url ? (
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button onClick={() => window.open(form.billete_url, '_blank')} style={{
-                    flex: 1, padding: 10, borderRadius: 10, border: 'none',
-                    background: '#EEEDFE', color: '#3C3489', fontSize: 13, fontWeight: 500, cursor: 'pointer'
+                    flex: 1, padding: 12, borderRadius: 14, border: 'none',
+                    background: 'linear-gradient(145deg, var(--sage-light), var(--sage))',
+                    color: 'var(--warm-grey)', fontSize: 11, fontWeight: 700, cursor: 'pointer',
+                    letterSpacing: '0.1em', fontFamily: 'inherit',
+                    boxShadow: '3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light)',
                   }}>📄 Ver billetes</button>
                   <label style={{
-                    padding: '10px 14px', borderRadius: 10, border: '1px solid #ddd',
-                    background: 'white', color: '#888', fontSize: 13, cursor: 'pointer'
+                    padding: '12px 16px', borderRadius: 14, border: 'none',
+                    background: 'var(--bg)', color: 'var(--text-secondary)', fontSize: 13, cursor: 'pointer',
+                    boxShadow: '3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light)',
                   }}>
                     🔄
                     <input type='file' accept='application/pdf,image/*' style={{ display: 'none' }}
@@ -208,9 +245,12 @@ export default function FichaViaje({ tipo, datos, amigos, onCerrar, onActualizad
               ) : (
                 <label style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                  width: '100%', padding: 12, borderRadius: 10,
-                  border: '1px dashed #7F77DD', background: 'white',
-                  color: '#7F77DD', fontSize: 13, fontWeight: 500, cursor: 'pointer', boxSizing: 'border-box'
+                  width: '100%', padding: 14, borderRadius: 16,
+                  background: 'var(--bg)', border: 'none',
+                  color: 'var(--sage-dark)', fontSize: 11, fontWeight: 700, cursor: 'pointer',
+                  boxSizing: 'border-box', letterSpacing: '0.15em', textTransform: 'uppercase',
+                  boxShadow: 'inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light)',
+                  fontFamily: 'inherit',
                 }}>
                   {subiendo ? 'Subiendo...' : '📎 Subir billetes'}
                   <input type='file' accept='application/pdf,image/*' style={{ display: 'none' }}
@@ -232,8 +272,11 @@ export default function FichaViaje({ tipo, datos, amigos, onCerrar, onActualizad
             )}
             {form.maps_url && (
               <button onClick={() => window.open(form.maps_url, '_blank')} style={{
-                width: '100%', padding: 10, borderRadius: 10, border: 'none', marginTop: 12,
-                background: '#E6F1FB', color: '#0C447C', fontSize: 13, fontWeight: 500, cursor: 'pointer'
+                width: '100%', padding: 12, borderRadius: 14, border: 'none', marginTop: 14,
+                background: 'linear-gradient(145deg, var(--sage-light), var(--sage))',
+                color: 'var(--warm-grey)', fontSize: 11, fontWeight: 700, cursor: 'pointer',
+                letterSpacing: '0.1em', fontFamily: 'inherit',
+                boxShadow: '3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light)',
               }}>📍 Ver en Google Maps</button>
             )}
           </div>
@@ -241,44 +284,41 @@ export default function FichaViaje({ tipo, datos, amigos, onCerrar, onActualizad
 
         {editando && esTransporte && datos?.tipo === 'Coche' && (
           <div>
-            <div style={{ fontSize: 12, color: '#666', marginBottom: 10 }}>¿Quién pone el coche?</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16 }}>
+            <div style={labelNeu}>¿Quién pone el coche?</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 18 }}>
               {amigos.map(a => {
                 const coches = form.coches || []
-                const seleccionado = coches.includes(a.id)
+                const sel = coches.includes(a.id)
                 return (
                   <div key={a.id} onClick={() => {
-                    const nuevos = seleccionado ? coches.filter(id => id !== a.id) : [...coches, a.id]
-                    set('coches', nuevos)
+                    set('coches', sel ? coches.filter(id => id !== a.id) : [...coches, a.id])
                   }} style={{
-                    display: 'flex', alignItems: 'center', gap: 10,
-                    padding: '8px 12px', borderRadius: 10, cursor: 'pointer',
-                    background: seleccionado ? '#EEEDFE' : '#f8f8f8',
-                    border: seleccionado ? '1px solid #AFA9EC' : '1px solid #eee',
+                    display: 'flex', alignItems: 'center', gap: 12,
+                    padding: '10px 14px', borderRadius: 14, cursor: 'pointer',
+                    background: sel ? 'linear-gradient(145deg, var(--sage-light), var(--sage))' : 'var(--bg)',
+                    boxShadow: sel
+                      ? '3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light)'
+                      : 'inset 2px 2px 4px var(--shadow-dark), inset -2px -2px 4px var(--shadow-light)',
                   }}>
-                    <Avatar amigo={a} size={34} />
-                    <span style={{ fontSize: 13, flex: 1, fontWeight: seleccionado ? 500 : 400, color: seleccionado ? '#3C3489' : 'inherit' }}>{a.nombre}</span>
-                    <span style={{ fontSize: 16, color: seleccionado ? '#7F77DD' : '#ddd' }}>{seleccionado ? '🚗' : '○'}</span>
+                    <Avatar amigo={a} size={36} />
+                    <span style={{ fontSize: 13, flex: 1, fontWeight: 700, color: sel ? 'var(--warm-grey)' : 'var(--text-secondary)', letterSpacing: '0.03em' }}>{a.nombre}</span>
+                    <span style={{ fontSize: 16, color: sel ? 'var(--warm-grey)' : 'var(--text-secondary)', opacity: sel ? 1 : 0.3 }}>{sel ? '🚗' : '○'}</span>
                   </div>
                 )
               })}
             </div>
-            <button onClick={guardar} style={{
-              width: '100%', padding: 12, borderRadius: 10, border: 'none',
-              background: '#7F77DD', color: 'white', fontSize: 14, fontWeight: 500, cursor: 'pointer'
-            }}>Guardar</button>
+            <button onClick={guardar} style={sageBtn}>Guardar</button>
           </div>
         )}
 
         {editando && esTransporte && datos?.tipo !== 'Coche' && (
           <div>
-            <div style={{ fontSize: 12, fontWeight: 500, color: '#7F77DD', marginBottom: 8 }}>{tn.ida}</div>
+            <div style={secTitulo}>{tn.ida}</div>
             {campo(tn.compania, 'compania', 'text', 'Ej: Iberia, Renfe...')}
             {campo(tn.numero, 'numero_vuelo', 'text', 'Ej: IB3456')}
-            <div style={{ marginBottom: 12 }}>
-              <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 4 }}>¿Quién compró los billetes?</label>
-              <select value={form.comprador_id || form.responsable_id || ''} onChange={e => set('responsable_id', e.target.value)}
-                style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #ddd', fontSize: 14, background: 'white' }}>
+            <div style={{ marginBottom: 14 }}>
+              <label style={labelNeu}>¿Quién compró los billetes?</label>
+              <select value={form.comprador_id || form.responsable_id || ''} onChange={e => set('responsable_id', e.target.value)} style={inputNeu}>
                 <option value=''>— Sin asignar —</option>
                 {amigos.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
               </select>
@@ -287,47 +327,45 @@ export default function FichaViaje({ tipo, datos, amigos, onCerrar, onActualizad
             {campo('Hora de salida', 'hora_salida', 'time')}
             {campo('Fecha de llegada', 'fecha_llegada', 'date')}
             {campo('Hora de llegada', 'hora_llegada', 'time')}
-            <div style={{ fontSize: 12, fontWeight: 500, color: '#7F77DD', margin: '16px 0 8px' }}>{tn.vuelta}</div>
+            <div style={{ ...secTitulo, marginTop: 18 }}>{tn.vuelta}</div>
             {campo(tn.companiaVuelta, 'compania_vuelta', 'text', 'Ej: Iberia, Ryanair...')}
             {campo(tn.numeroVuelta, 'numero_vuelo_vuelta', 'text', 'Ej: FR 1446')}
-            {campo('Fecha de salida vuelta', 'fecha_salida_vuelta', 'date')}
-            {campo('Hora de salida vuelta', 'hora_salida_vuelta', 'time')}
-            {campo('Fecha de llegada vuelta', 'fecha_llegada_vuelta', 'date')}
-            {campo('Hora de llegada vuelta', 'hora_llegada_vuelta', 'time')}
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 8 }}>¿Quién viaja?</label>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {campo('Fecha salida vuelta', 'fecha_salida_vuelta', 'date')}
+            {campo('Hora salida vuelta', 'hora_salida_vuelta', 'time')}
+            {campo('Fecha llegada vuelta', 'fecha_llegada_vuelta', 'date')}
+            {campo('Hora llegada vuelta', 'hora_llegada_vuelta', 'time')}
+            <div style={{ marginBottom: 18 }}>
+              <label style={labelNeu}>¿Quién viaja?</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {amigos.map(a => {
                   const sel = (form.viajeros || []).includes(a.id)
                   return (
                     <div key={a.id} onClick={() => toggleViajero(a.id)} style={{
-                      display: 'flex', alignItems: 'center', gap: 10,
-                      padding: '8px 12px', borderRadius: 10, cursor: 'pointer',
-                      background: sel ? '#EEEDFE' : '#f8f8f8',
-                      border: sel ? '1px solid #AFA9EC' : '1px solid #eee',
+                      display: 'flex', alignItems: 'center', gap: 12,
+                      padding: '10px 14px', borderRadius: 14, cursor: 'pointer',
+                      background: sel ? 'linear-gradient(145deg, var(--sage-light), var(--sage))' : 'var(--bg)',
+                      boxShadow: sel
+                        ? '3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light)'
+                        : 'inset 2px 2px 4px var(--shadow-dark), inset -2px -2px 4px var(--shadow-light)',
                     }}>
-                      <Avatar amigo={a} size={34} />
-                      <span style={{ fontSize: 13, flex: 1, fontWeight: sel ? 500 : 400, color: sel ? '#3C3489' : 'inherit' }}>{a.nombre}</span>
-                      <span style={{ fontSize: 16, color: sel ? '#7F77DD' : '#ddd' }}>{sel ? '✓' : '○'}</span>
+                      <Avatar amigo={a} size={36} />
+                      <span style={{ fontSize: 13, flex: 1, fontWeight: 700, color: sel ? 'var(--warm-grey)' : 'var(--text-secondary)', letterSpacing: '0.03em' }}>{a.nombre}</span>
+                      <span style={{ fontSize: 16, color: sel ? 'var(--warm-grey)' : 'var(--text-secondary)', opacity: sel ? 1 : 0.3 }}>{sel ? '✓' : '○'}</span>
                     </div>
                   )
                 })}
               </div>
             </div>
-            <button onClick={guardar} style={{
-              width: '100%', padding: 12, borderRadius: 10, border: 'none',
-              background: '#7F77DD', color: 'white', fontSize: 14, fontWeight: 500, cursor: 'pointer'
-            }}>Guardar</button>
+            <button onClick={guardar} style={sageBtn}>Guardar</button>
           </div>
         )}
 
         {editando && !esTransporte && (
           <div>
             {campo('Nombre del hotel', 'nombre', 'text', 'Ej: NH Milano')}
-            <div style={{ marginBottom: 12 }}>
-              <label style={{ fontSize: 12, color: '#666', display: 'block', marginBottom: 4 }}>¿Quién hizo la reserva?</label>
-              <select value={form.responsable_id || ''} onChange={e => set('responsable_id', e.target.value)}
-                style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #ddd', fontSize: 14, background: 'white' }}>
+            <div style={{ marginBottom: 14 }}>
+              <label style={labelNeu}>¿Quién hizo la reserva?</label>
+              <select value={form.responsable_id || ''} onChange={e => set('responsable_id', e.target.value)} style={inputNeu}>
                 <option value=''>— Sin asignar —</option>
                 {amigos.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
               </select>
@@ -335,10 +373,7 @@ export default function FichaViaje({ tipo, datos, amigos, onCerrar, onActualizad
             {campo('Fecha de entrada', 'fecha_entrada', 'date')}
             {campo('Fecha de salida', 'fecha_salida', 'date')}
             {campo('Enlace Google Maps', 'maps_url', 'text', 'https://maps.google.com/...')}
-            <button onClick={guardar} style={{
-              width: '100%', padding: 12, borderRadius: 10, border: 'none',
-              background: '#7F77DD', color: 'white', fontSize: 14, fontWeight: 500, cursor: 'pointer'
-            }}>Guardar</button>
+            <button onClick={guardar} style={sageBtn}>Guardar</button>
           </div>
         )}
       </div>
@@ -348,9 +383,9 @@ export default function FichaViaje({ tipo, datos, amigos, onCerrar, onActualizad
 
 function InfoRow({ label, value }) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '8px 0', borderBottom: '0.5px solid #f0f0f0' }}>
-      <span style={{ fontSize: 12, color: '#888', flexShrink: 0 }}>{label}</span>
-      <span style={{ fontSize: 13, fontWeight: 500, textAlign: 'right', maxWidth: '65%' }}>{value}</span>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '10px 0', borderBottom: '0.5px solid var(--bg-dark)' }}>
+      <span style={{ fontSize: 10, color: 'var(--text-secondary)', flexShrink: 0, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase' }}>{label}</span>
+      <span style={{ fontSize: 13, fontWeight: 600, textAlign: 'right', maxWidth: '65%', color: 'var(--text-primary)', letterSpacing: '0.03em' }}>{value}</span>
     </div>
   )
 }

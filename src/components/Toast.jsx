@@ -7,17 +7,19 @@ export default function Toast({ mensaje, tipo = 'ok', onClose }) {
   }, [])
 
   const colores = {
-    ok: { bg: '#EAF3DE', color: '#27500A', border: '#C0DD97' },
-    error: { bg: '#FCEBEB', color: '#791F1F', border: '#F09595' },
+    ok: { bg: 'linear-gradient(145deg, var(--sage-light), var(--sage))', color: 'var(--warm-grey)' },
+    error: { bg: 'linear-gradient(145deg, #D8A0A0, #C08080)', color: '#4A2020' },
   }
   const c = colores[tipo]
 
   return (
     <div style={{
       position: 'fixed', bottom: 80, left: '50%', transform: 'translateX(-50%)',
-      background: c.bg, color: c.color, border: `1px solid ${c.border}`,
-      borderRadius: 20, padding: '10px 20px', fontSize: 13, fontWeight: 500,
+      background: c.bg, color: c.color,
+      borderRadius: 20, padding: '11px 22px', fontSize: 12, fontWeight: 700,
       zIndex: 999, whiteSpace: 'nowrap',
+      letterSpacing: '0.08em',
+      boxShadow: '6px 6px 12px var(--shadow-dark), -6px -6px 12px var(--shadow-light)',
       animation: 'fadeInUp 0.2s ease',
     }}>
       {tipo === 'ok' ? '✓ ' : '✕ '}{mensaje}
