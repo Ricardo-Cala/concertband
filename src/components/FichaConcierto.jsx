@@ -256,16 +256,19 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
           </div>
           <div style={{ display: 'flex', gap: 6 }}>
             <button onClick={compartirWhatsApp} style={{
-              background: '#128C7E', border: 'none', color: 'white',
-              borderRadius: 10, padding: '6px 10px', fontSize: 10, cursor: 'pointer',
-              display: 'flex', alignItems: 'center', gap: 4, fontWeight: 700,
-              letterSpacing: '0.05em', fontFamily: 'inherit',
-            }}>📲 WA</button>
+              background: 'linear-gradient(145deg, var(--sage-light), var(--sage-dark))',
+    color: 'var(--warm-grey)',
+    borderRadius: 12, padding: '8px 16px', fontSize: 10, cursor: 'pointer',
+    display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700,
+    letterSpacing: '0.15em', textTransform: 'uppercase',
+    boxShadow: '3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light)',
+    fontFamily: 'inherit',
+  }}>WHATSAPP</button>
             <button onClick={onEditar} style={{
               background: 'rgba(245,239,230,0.1)', border: 'none', color: 'var(--sage-light)',
               borderRadius: 10, padding: '6px 10px', fontSize: 10, cursor: 'pointer',
               letterSpacing: '0.15em', textTransform: 'uppercase', fontWeight: 700, fontFamily: 'inherit',
-            }}>✏️</button>
+            }}>EDITAR</button>
           </div>
         </div>
         <div style={{ display: 'flex', gap: 6 }}>
