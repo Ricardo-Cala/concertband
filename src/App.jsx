@@ -201,15 +201,14 @@ export default function App() {
       hoyNorm.setHours(0, 0, 0, 0)
       return Math.round((fechaConcierto - hoyNorm) / (1000 * 60 * 60 * 24))
     })() : null
-    const [resumen, setResumen] = useState({ van: 0, entradas: 0, pendientePago: 0 })
+    const [resumen, setResumen] = useState({ van: 0, pendientePago: 0 })
 
     useEffect(() => {
       if (!siguiente) return
       Promise.all([
         supabase.from('asistentes').select('*').eq('concierto_id', siguiente.id).eq('confirmado', true),
-        supabase.from('entradas').select('cantidad').eq('concierto_id', siguiente.id),
         supabase.from('gastos').select('id').eq('concierto_id', siguiente.id),
-      ]).then(async ([a, e, g]) => {
+      ]).then(async ([a, g]) => {
         let pendientePago = 0
         if (g.data && g.data.length > 0) {
           const gastoIds = g.data.map(x => x.id)
@@ -218,7 +217,6 @@ export default function App() {
         }
         setResumen({
           van: a.data?.length || 0,
-          entradas: e.data?.reduce((s, x) => s + x.cantidad, 0) || 0,
           pendientePago,
         })
       })
@@ -264,14 +262,10 @@ export default function App() {
                 </div>
               </div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
               <div style={{ background: 'rgba(245,239,230,0.08)', borderRadius: 12, padding: '10px 8px', textAlign: 'center' }}>
                 <div style={{ fontSize: 20, fontWeight: 300, color: 'var(--sage-light)' }}>{resumen.van}</div>
                 <div style={{ fontSize: 9, color: 'rgba(245,239,230,0.5)', marginTop: 4, letterSpacing: '0.18em', textTransform: 'uppercase', fontWeight: 600 }}>Van</div>
-              </div>
-              <div style={{ background: 'rgba(245,239,230,0.08)', borderRadius: 12, padding: '10px 8px', textAlign: 'center' }}>
-                <div style={{ fontSize: 20, fontWeight: 300, color: 'var(--sage-light)' }}>{resumen.entradas}</div>
-                <div style={{ fontSize: 9, color: 'rgba(245,239,230,0.5)', marginTop: 4, letterSpacing: '0.18em', textTransform: 'uppercase', fontWeight: 600 }}>Entradas</div>
               </div>
               <div style={{ background: 'rgba(245,239,230,0.08)', borderRadius: 12, padding: '10px 8px', textAlign: 'center' }}>
                 <div style={{ fontSize: 20, fontWeight: 300, color: resumen.pendientePago > 0 ? '#FAC775' : 'var(--sage-light)' }}>
