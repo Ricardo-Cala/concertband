@@ -7,6 +7,8 @@ import EditarConcierto from './components/EditarConcierto'
 import NuevoConcierto from './components/NuevoConcierto'
 import Grupo from './components/Grupo'
 import EstadisticasGrupo from './components/EstadisticasGrupo'
+import CalendarioConciertos from './components/CalendarioConciertos'
+import ListaConciertos from './components/ListaConciertos'
 
 export default function App() {
   const [pantalla, setPantalla] = useState('inicio')
@@ -18,6 +20,8 @@ export default function App() {
   const [conciertoEditando, setConciertoEditando] = useState(null)
   const [mostrarNuevo, setMostrarNuevo] = useState(false)
   const [verEstadisticas, setVerEstadisticas] = useState(false)
+  const [mostrarCalendario, setMostrarCalendario] = useState(false)
+  const [mostrarListaCompleta, setMostrarListaCompleta] = useState(false)
   const [cargando, setCargando] = useState(true)
   const [pullDistance, setPullDistance] = useState(0)
   const [refrescando, setRefrescando] = useState(false)
@@ -232,11 +236,11 @@ export default function App() {
     return (
       <div style={{ padding: 16 }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 18 }}>
-          <div style={statCard}>
+          <div className='card-tap' onClick={() => setMostrarListaCompleta(true)} style={{ ...statCard, cursor: 'pointer' }}>
             <div style={{ fontSize: 28, fontWeight: 300, color: 'var(--sage-dark)' }}>{conciertos.length}</div>
             <div style={{ fontSize: 10, color: 'var(--text-secondary)', marginTop: 4, fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase' }}>Conciertos totales</div>
           </div>
-          <div style={statCard}>
+          <div className='card-tap' onClick={() => setMostrarCalendario(true)} style={{ ...statCard, cursor: 'pointer' }}>
             <div style={{ fontSize: 28, fontWeight: 300, color: 'var(--sage-dark)' }}>{conciertos.filter(c => c.estado === 'confirmado').length}</div>
             <div style={{ fontSize: 10, color: 'var(--text-secondary)', marginTop: 4, fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase' }}>Confirmados</div>
           </div>
@@ -473,6 +477,22 @@ export default function App() {
           boxShadow: '5px 5px 12px var(--shadow-dark), -5px -5px 12px var(--shadow-light)',
           fontFamily: 'inherit',
         }}>+</button>
+      )}
+
+      {mostrarCalendario && (
+        <CalendarioConciertos
+          conciertos={conciertos}
+          onCerrar={() => setMostrarCalendario(false)}
+          onSeleccionar={(c) => { setMostrarCalendario(false); setConciertoSeleccionado(c) }}
+        />
+      )}
+
+      {mostrarListaCompleta && (
+        <ListaConciertos
+          conciertos={conciertos}
+          onCerrar={() => setMostrarListaCompleta(false)}
+          onSeleccionar={(c) => { setMostrarListaCompleta(false); setConciertoSeleccionado(c) }}
+        />
       )}
     </div>
   )
