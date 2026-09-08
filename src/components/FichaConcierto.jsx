@@ -161,13 +161,34 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
     const lista = Array.from(archivos)
     mostrarToast(`Subiendo ${lista.length} archivo${lista.length > 1 ? 's' : ''}...`)
     const nuevasUrls = []
+    let ultimoError = null
+    let infoArchivo = ''
     for (const archivo of lista) {
-      const ext = archivo.type.includes('pdf') ? 'pdf' : archivo.name.split('.').pop() || 'jpg'
+      const nombreSeguro = archivo.name || 'archivo'
+      const tipoSeguro = archivo.type || ''
+      infoArchivo = `${nombreSeguro}|t:${tipoSeguro || 'vacio'}|s:${archivo.size}`
+      let ext = 'bin'
+      if (tipoSeguro.includes('pdf')) ext = 'pdf'
+      else if (tipoSeguro.includes('jpeg') || tipoSeguro.includes('jpg')) ext = 'jpg'
+      else if (tipoSeguro.includes('png')) ext = 'png'
+      else if (tipoSeguro.includes('heic')) ext = 'heic'
+      else if (tipoSeguro.includes('heif')) ext = 'heif'
+      else if (nombreSeguro.includes('.')) {
+        const posible = nombreSeguro.split('.').pop().toLowerCase()
+        if (posible && posible.length <= 5) ext = posible
+      }
       const path = `${gasto.id}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`
-      const { error } = await supabase.storage.from('entradas-pdf').upload(path, archivo)
+      const contentType = tipoSeguro || (ext === 'pdf' ? 'application/pdf' : ext === 'png' ? 'image/png' : 'image/jpeg')
+      const { error } = await supabase.storage.from('entradas-pdf').upload(path, archivo, {
+        contentType,
+        upsert: false,
+      })
       if (!error) {
         const { data } = supabase.storage.from('entradas-pdf').getPublicUrl(path)
         nuevasUrls.push(data.publicUrl)
+      } else {
+        ultimoError = error
+        console.error('[subirEntradas] Error:', error, '| Archivo:', infoArchivo)
       }
     }
     if (nuevasUrls.length > 0) {
@@ -177,7 +198,10 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
       cargarDatos()
       mostrarToast(`${nuevasUrls.length} archivo${nuevasUrls.length > 1 ? 's subidos' : ' subido'} correctamente`)
     } else {
-      mostrarToast('Error al subir', 'error')
+      const msg = ultimoError
+        ? `Err: ${(ultimoError.message || 'desconocido').slice(0, 60)} [${infoArchivo.slice(0, 40)}]`
+        : 'Error al subir'
+      mostrarToast(msg, 'error')
     }
   }
 
