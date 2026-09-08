@@ -198,10 +198,20 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
       cargarDatos()
       mostrarToast(`${nuevasUrls.length} archivo${nuevasUrls.length > 1 ? 's subidos' : ' subido'} correctamente`)
     } else {
-      const msg = ultimoError
-        ? `Err: ${(ultimoError.message || 'desconocido').slice(0, 60)} [${infoArchivo.slice(0, 40)}]`
-        : 'Error al subir'
-      mostrarToast(msg, 'error')
+      if (ultimoError) {
+        const detalle = [
+          'ERROR AL SUBIR',
+          '',
+          'Mensaje: ' + (ultimoError.message || 'sin mensaje'),
+          'StatusCode: ' + (ultimoError.statusCode || 'sin codigo'),
+          'Error: ' + (ultimoError.error || 'sin tipo'),
+          '',
+          'Archivo: ' + infoArchivo,
+        ].join('\n')
+        alert(detalle)
+      } else {
+        mostrarToast('Error al subir', 'error')
+      }
     }
   }
 
