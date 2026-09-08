@@ -179,7 +179,10 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
       }
       const path = `${gasto.id}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`
       const contentType = tipoSeguro || (ext === 'pdf' ? 'application/pdf' : ext === 'png' ? 'image/png' : 'image/jpeg')
-      const { error } = await supabase.storage.from('entradas-pdf').upload(path, archivo, {
+      // FIX iOS Safari: leer el archivo como ArrayBuffer evita el bug "No content provided"
+      // que ocurre cuando WebKit no serializa correctamente el File como body del fetch.
+      const buffer = await archivo.arrayBuffer()
+      const { error } = await supabase.storage.from('entradas-pdf').upload(path, buffer, {
         contentType,
         upsert: false,
       })
@@ -198,20 +201,7 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
       cargarDatos()
       mostrarToast(`${nuevasUrls.length} archivo${nuevasUrls.length > 1 ? 's subidos' : ' subido'} correctamente`)
     } else {
-      if (ultimoError) {
-        const detalle = [
-          'ERROR AL SUBIR',
-          '',
-          'Mensaje: ' + (ultimoError.message || 'sin mensaje'),
-          'StatusCode: ' + (ultimoError.statusCode || 'sin codigo'),
-          'Error: ' + (ultimoError.error || 'sin tipo'),
-          '',
-          'Archivo: ' + infoArchivo,
-        ].join('\n')
-        alert(detalle)
-      } else {
-        mostrarToast('Error al subir', 'error')
-      }
+      mostrarToast('Error al subir', 'error')
     }
   }
 
