@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
-import { Home, Music2, Users } from 'lucide-react'
+import { Home, Music2, Users, Calendar } from 'lucide-react'
 import Header from './components/Header'
 import FichaConcierto from './components/FichaConcierto'
 import EditarConcierto from './components/EditarConcierto'
@@ -240,9 +240,9 @@ export default function App() {
             <div style={{ fontSize: 28, fontWeight: 300, color: 'var(--sage-dark)' }}>{conciertos.length}</div>
             <div style={{ fontSize: 10, color: 'var(--text-secondary)', marginTop: 4, fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase' }}>Conciertos totales</div>
           </div>
-          <div className='card-tap' onClick={() => setMostrarCalendario(true)} style={{ ...statCard, cursor: 'pointer' }}>
-            <div style={{ fontSize: 28, fontWeight: 300, color: 'var(--sage-dark)' }}>{conciertos.filter(c => c.estado === 'confirmado').length}</div>
-            <div style={{ fontSize: 10, color: 'var(--text-secondary)', marginTop: 4, fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase' }}>Confirmados</div>
+          <div className='card-tap' onClick={() => setMostrarCalendario(true)} style={{ ...statCard, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+            <Calendar size={30} strokeWidth={1.4} color='var(--sage-dark)' />
+            <div style={{ fontSize: 10, color: 'var(--text-secondary)', fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase' }}>Calendario</div>
           </div>
         </div>
 
