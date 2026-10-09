@@ -1,8 +1,4 @@
-import { writeFileSync, mkdirSync } from 'fs'
-
-mkdirSync('api', { recursive: true })
-
-const code = String.raw`export default function handler(req, res) {
+export default function handler(req, res) {
   const q = req.query || {}
   const titulo = q.titulo || 'Concierto'
   const fecha = q.fecha || ''
@@ -71,7 +67,3 @@ const code = String.raw`export default function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store')
   res.status(200).send(lineas.join('\r\n'))
 }
-`
-
-writeFileSync('api/ics.js', code)
-console.log('Hecho: api/ics.js creado')
