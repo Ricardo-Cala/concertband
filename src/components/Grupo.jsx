@@ -20,11 +20,30 @@ const buildFecha = (dia, mes, anio) => {
 const diasParaCumple = (fecha) => {
   if (!fecha) return null
   const hoy = new Date()
+  const hoyMid = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate())
   const d = new Date(fecha)
-  const esteCumple = new Date(hoy.getFullYear(), d.getUTCMonth(), d.getUTCDate())
-  if (esteCumple < hoy) esteCumple.setFullYear(hoy.getFullYear() + 1)
-  return Math.ceil((esteCumple - hoy) / (1000 * 60 * 60 * 24))
+  const esteCumple = new Date(hoyMid.getFullYear(), d.getUTCMonth(), d.getUTCDate())
+  if (esteCumple < hoyMid) esteCumple.setFullYear(hoyMid.getFullYear() + 1)
+  return Math.round((esteCumple - hoyMid) / (1000 * 60 * 60 * 24))
 }
+
+const calcularEdadHoy = (fecha) => {
+  if (!fecha) return null
+  const d = new Date(fecha)
+  const edad = new Date().getFullYear() - d.getUTCFullYear()
+  return edad > 0 && edad < 150 ? edad : null
+}
+
+const MENSAJES_CUMPLE = [
+  '¡Que soples muchas velas!',
+  '¡A por la tarta!',
+  '¡Hoy toca brindis!',
+  '¡Un BOLO más en la mochila!',
+  '¡Felicidades, grande!',
+  '¡Que lo celebres a lo grande!',
+  '¡A disfrutar del día!',
+  '¡Hoy mandas tú!',
+]
 
 const formatCumple = (fecha) => {
   if (!fecha) return null
@@ -164,6 +183,7 @@ export default function Grupo({ amigos, onActualizado, onAbrirEstadisticas }) {
   const [fichaAmigo, setFichaAmigo] = useState(null)
   const [form, setForm] = useState({ nombre: '', iniciales: '', color: '#534AB7', dia: '', mes: '', anio: '' })
   const [subiendo, setSubiendo] = useState(null)
+  const [mensajeCumple] = useState(() => MENSAJES_CUMPLE[Math.floor(Math.random() * MENSAJES_CUMPLE.length)])
   const [mostrarNuevo, setMostrarNuevo] = useState(false)
   const [formNuevo, setFormNuevo] = useState({ nombre: '', iniciales: '', color: '#534AB7', dia: '', mes: '', anio: '' })
   const fileRefs = useRef({})
@@ -263,6 +283,9 @@ export default function Grupo({ amigos, onActualizado, onAbrirEstadisticas }) {
     .filter(a => a.dias !== null && a.dias <= 30)
     .sort((a, b) => a.dias - b.dias)
 
+  const cumpleHoy = proximosCumples.filter(a => a.dias === 0)
+  const otrosProximos = proximosCumples.filter(a => a.dias !== 0)
+
   return (
     <div style={{ padding: 16 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
@@ -321,19 +344,66 @@ export default function Grupo({ amigos, onActualizado, onAbrirEstadisticas }) {
         <div style={{ fontSize: 24, color: 'rgba(245,239,230,0.6)' }}>›</div>
       </div>
 
-      {proximosCumples.length > 0 && (
+      {cumpleHoy.length > 0 && (
+        <>
+          <style>{`
+            @keyframes cumple-latido {
+              0%, 100% { transform: scale(1); }
+              50% { transform: scale(1.07); }
+            }
+            @keyframes cumple-giro {
+              0%, 100% { transform: rotate(0deg); }
+              25% { transform: rotate(10deg); }
+              75% { transform: rotate(-10deg); }
+            }
+          `}</style>
+          <div style={{
+            background: 'linear-gradient(135deg, #D4A574 0%, #B5947A 55%, var(--sage) 100%)',
+            borderRadius: 20, padding: 18, marginBottom: 16,
+            boxShadow: '6px 6px 14px var(--shadow-dark), -6px -6px 14px var(--shadow-light)',
+            color: 'var(--warm-grey)',
+          }}>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.3em', textTransform: 'uppercase', marginBottom: 12, opacity: 0.9 }}>
+              🎂 ¡Hoy es el cumple!
+            </div>
+            {cumpleHoy.map(a => {
+              const edad = calcularEdadHoy(a.fecha_nacimiento)
+              return (
+                <div key={a.id} onClick={() => abrirFicha(a)} style={{
+                  display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer', padding: '6px 0',
+                }}>
+                  <div style={{ animation: 'cumple-latido 1.8s ease-in-out infinite', flexShrink: 0 }}>
+                    <Avatar amigo={a} size={62} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 19, fontWeight: 700, color: 'var(--warm-grey)', letterSpacing: '0.03em', lineHeight: 1.2 }}>
+                      {a.nombre}{edad ? ' · ' + edad : ''}
+                    </div>
+                    <div style={{ fontSize: 11, color: 'var(--warm-grey)', opacity: 0.85, marginTop: 4, letterSpacing: '0.03em', fontWeight: 600 }}>
+                      {mensajeCumple}
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 28, animation: 'cumple-giro 2.4s ease-in-out infinite', transformOrigin: '50% 90%' }}>🎉</div>
+                </div>
+              )
+            })}
+          </div>
+        </>
+      )}
+
+      {otrosProximos.length > 0 && (
         <div style={{
           background: 'linear-gradient(145deg, var(--bg-light), var(--bg-dark))',
           borderRadius: 18, padding: 16, marginBottom: 16,
           boxShadow: '6px 6px 12px var(--shadow-dark), -6px -6px 12px var(--shadow-light)',
         }}>
           <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 12, letterSpacing: '0.25em', textTransform: 'uppercase' }}>♪ Cumpleaños próximos</div>
-          {proximosCumples.map(a => (
+          {otrosProximos.map(a => (
             <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
               <Avatar amigo={a} size={30} />
               <span style={{ fontSize: 13, flex: 1, color: 'var(--text-primary)', fontWeight: 600, letterSpacing: '0.03em' }}>{a.nombre}</span>
               <span style={{ fontSize: 11, color: 'var(--sage-dark)', fontWeight: 700, letterSpacing: '0.05em' }}>
-                {a.dias === 0 ? '¡Hoy! 🎉' : a.dias === 1 ? 'Mañana' : 'en ' + a.dias + ' días'}
+                {a.dias === 1 ? 'Mañana' : 'en ' + a.dias + ' días'}
               </span>
             </div>
           ))}
