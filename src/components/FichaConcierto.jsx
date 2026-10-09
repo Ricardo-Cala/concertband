@@ -73,7 +73,7 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
       notas: 'Concierto con BOLOS GRUPIIII - concertband.vercel.app',
     })
     if (hora) params.set('hora', hora)
-    window.open('/api/ics?' + params.toString(), '_blank')
+    window.location.href = '/api/ics?' + params.toString()
   }
 
   const setEstadoAsistencia = async (amigoId, estado) => {
