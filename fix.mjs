@@ -1,77 +1,64 @@
-import { writeFileSync, mkdirSync } from 'fs'
+import { readFileSync, writeFileSync } from 'fs'
 
-mkdirSync('api', { recursive: true })
+const ruta = 'src/components/FichaConcierto.jsx'
+const original = readFileSync(ruta, 'utf8')
+const crlf = original.includes('\r\n')
+let code = original.replace(/\r\n/g, '\n')
 
-const code = String.raw`export default function handler(req, res) {
-  const q = req.query || {}
-  const titulo = q.titulo || 'Concierto'
-  const fecha = q.fecha || ''
-  const hora = q.hora || ''
-  const lugar = q.lugar || ''
-  const notas = q.notas || ''
-  const id = q.id || String(Date.now())
-
-  if (!/^\d{4}-\d{2}-\d{2}/.test(fecha)) {
-    res.status(400).send('Fecha no valida')
-    return
-  }
-
-  const esc = s => String(s)
-    .replace(/\\/g, '\\\\')
-    .replace(/;/g, '\\;')
-    .replace(/,/g, '\\,')
-    .replace(/\r?\n/g, '\\n')
-
-  const p2 = n => String(n).padStart(2, '0')
-  const fmtDia = d => d.getUTCFullYear() + p2(d.getUTCMonth() + 1) + p2(d.getUTCDate())
-  const fmtHora = d => fmtDia(d) + 'T' + p2(d.getUTCHours()) + p2(d.getUTCMinutes()) + '00'
-
-  const partes = fecha.slice(0, 10).split('-').map(Number)
-  const y = partes[0], m = partes[1], d = partes[2]
-  let inicio, fin
-
-  if (/^\d{1,2}:\d{2}/.test(hora)) {
-    const hm = hora.split(':').map(Number)
-    const ini = new Date(Date.UTC(y, m - 1, d, hm[0], hm[1]))
-    const end = new Date(ini.getTime() + 3 * 3600 * 1000)
-    inicio = 'DTSTART:' + fmtHora(ini)
-    fin = 'DTEND:' + fmtHora(end)
-  } else {
-    const ini = new Date(Date.UTC(y, m - 1, d))
-    const end = new Date(ini.getTime() + 24 * 3600 * 1000)
-    inicio = 'DTSTART;VALUE=DATE:' + fmtDia(ini)
-    fin = 'DTEND;VALUE=DATE:' + fmtDia(end)
-  }
-
-  const lineas = [
-    'BEGIN:VCALENDAR',
-    'VERSION:2.0',
-    'PRODID:-//BOLOS GRUPIIII//ES',
-    'CALSCALE:GREGORIAN',
-    'METHOD:PUBLISH',
-    'BEGIN:VEVENT',
-    'UID:' + id + '@concertband.vercel.app',
-    'DTSTAMP:' + fmtHora(new Date()) + 'Z',
-    inicio,
-    fin,
-    'SUMMARY:' + esc(titulo),
-    lugar ? 'LOCATION:' + esc(lugar) : '',
-    notas ? 'DESCRIPTION:' + esc(notas) : '',
-    'BEGIN:VALARM',
-    'ACTION:DISPLAY',
-    'DESCRIPTION:' + esc(titulo),
-    'TRIGGER:-P1D',
-    'END:VALARM',
-    'END:VEVENT',
-    'END:VCALENDAR'
-  ].filter(Boolean)
-
-  res.setHeader('Content-Type', 'text/calendar; charset=utf-8')
-  res.setHeader('Content-Disposition', 'inline; filename="concierto.ics"')
-  res.setHeader('Cache-Control', 'no-store')
-  res.status(200).send(lineas.join('\r\n'))
+const fallo = msg => {
+  console.error('ERROR: ' + msg + ' - no se ha modificado nada')
+  process.exit(1)
 }
-`
 
-writeFileSync('api/ics.js', code)
-console.log('Hecho: api/ics.js creado')
+// 1. Import del icono
+const impViejo = "Pencil, Trash2, Plus, X } from 'lucide-react'"
+if (code.includes('CalendarPlus')) fallo('CalendarPlus ya existe en el archivo')
+if (!code.includes(impViejo)) fallo('no encuentro el import de lucide-react')
+code = code.replace(impViejo, "Pencil, Trash2, Plus, X, CalendarPlus } from 'lucide-react'")
+
+// 2. Sustituir funcion compartirWhatsApp por anadirCalendario
+const nuevaFuncion = `  const anadirCalendario = () => {
+    const f = String(concierto.fecha || '')
+    let hora = concierto.hora ? String(concierto.hora).slice(0, 5) : ''
+    if (!hora && f.length > 10) {
+      const h = f.slice(11, 16)
+      if (h && h !== '00:00') hora = h
+    }
+    const lugar = [concierto.recinto, concierto.ciudad].filter(Boolean).join(', ')
+    const params = new URLSearchParams({
+      id: String(concierto.id),
+      titulo: concierto.artista || 'Concierto',
+      fecha: f.slice(0, 10),
+      lugar: lugar,
+      notas: 'Concierto con BOLOS GRUPIIII - concertband.vercel.app',
+    })
+    if (hora) params.set('hora', hora)
+    window.open('/api/ics?' + params.toString(), '_blank')
+  }
+
+`
+const iniF = code.indexOf('  const compartirWhatsApp = () => {')
+const finF = code.indexOf('  const setEstadoAsistencia')
+if (iniF < 0 || finF < 0 || finF < iniF) fallo('no encuentro la funcion compartirWhatsApp')
+code = code.slice(0, iniF) + nuevaFuncion + code.slice(finF)
+
+// 3. Sustituir boton WHATSAPP
+const nuevoBoton = `<button onClick={anadirCalendario} style={{
+              background: 'linear-gradient(145deg, var(--sage-light), var(--sage-dark))',
+              color: 'var(--warm-grey)', border: 'none',
+              borderRadius: 12, padding: '6px 12px', fontSize: 9, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700,
+              letterSpacing: '0.12em', textTransform: 'uppercase',
+              boxShadow: '3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light)',
+              fontFamily: 'inherit',
+            }}><CalendarPlus size={14} /><span style={{ lineHeight: 1.25, textAlign: 'left' }}>Añadir a<br />calendario</span></button>`
+const iniB = code.indexOf('<button onClick={compartirWhatsApp}')
+const marcaFin = '>WHATSAPP</button>'
+const finB = iniB < 0 ? -1 : code.indexOf(marcaFin, iniB)
+if (iniB < 0 || finB < 0) fallo('no encuentro el boton WHATSAPP')
+code = code.slice(0, iniB) + nuevoBoton + code.slice(finB + marcaFin.length)
+
+if (code.includes('compartirWhatsApp')) fallo('quedan referencias a compartirWhatsApp')
+
+writeFileSync(ruta, crlf ? code.replace(/\n/g, '\r\n') : code)
+console.log('Hecho: boton Añadir a calendario en FichaConcierto.jsx')

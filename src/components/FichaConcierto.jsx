@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Users, Ticket, Music, Camera, FileText, Paperclip, ClipboardPaste, Pencil, Trash2, Plus, X } from 'lucide-react'
+import { Users, Ticket, Music, Camera, FileText, Paperclip, ClipboardPaste, Pencil, Trash2, Plus, X, CalendarPlus } from 'lucide-react'
 import { supabase } from '../supabase'
 import Avatar from './Avatar'
 import Toast from './Toast'
@@ -57,12 +57,23 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
     }
   }
 
-  const compartirWhatsApp = () => {
-    const fecha = new Date(concierto.fecha).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
-    const fechaCapitalizada = fecha.charAt(0).toUpperCase() + fecha.slice(1)
-    const mensaje = `🎵 ${concierto.artista}\n📅 ${fechaCapitalizada}\n📍 ${concierto.recinto}, ${concierto.ciudad}\n¡Apúntate en la app BOLOS GRUPI !!!`
-    const url = `https://wa.me/?text=${encodeURIComponent(mensaje)}`
-    window.open(url, '_blank')
+  const anadirCalendario = () => {
+    const f = String(concierto.fecha || '')
+    let hora = concierto.hora ? String(concierto.hora).slice(0, 5) : ''
+    if (!hora && f.length > 10) {
+      const h = f.slice(11, 16)
+      if (h && h !== '00:00') hora = h
+    }
+    const lugar = [concierto.recinto, concierto.ciudad].filter(Boolean).join(', ')
+    const params = new URLSearchParams({
+      id: String(concierto.id),
+      titulo: concierto.artista || 'Concierto',
+      fecha: f.slice(0, 10),
+      lugar: lugar,
+      notas: 'Concierto con BOLOS GRUPIIII - concertband.vercel.app',
+    })
+    if (hora) params.set('hora', hora)
+    window.open('/api/ics?' + params.toString(), '_blank')
   }
 
   const setEstadoAsistencia = async (amigoId, estado) => {
@@ -326,15 +337,15 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
             </div>
           </div>
           <div style={{ display: 'flex', gap: 6 }}>
-            <button onClick={compartirWhatsApp} style={{
+            <button onClick={anadirCalendario} style={{
               background: 'linear-gradient(145deg, var(--sage-light), var(--sage-dark))',
-    color: 'var(--warm-grey)',
-    borderRadius: 12, padding: '8px 16px', fontSize: 10, cursor: 'pointer',
-    display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700,
-    letterSpacing: '0.15em', textTransform: 'uppercase',
-    boxShadow: '3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light)',
-    fontFamily: 'inherit',
-  }}>WHATSAPP</button>
+              color: 'var(--warm-grey)', border: 'none',
+              borderRadius: 12, padding: '6px 12px', fontSize: 9, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700,
+              letterSpacing: '0.12em', textTransform: 'uppercase',
+              boxShadow: '3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light)',
+              fontFamily: 'inherit',
+            }}><CalendarPlus size={14} /><span style={{ lineHeight: 1.25, textAlign: 'left' }}>Añadir a<br />calendario</span></button>
             <button onClick={onEditar} style={{
               background: 'rgba(245,239,230,0.1)', border: 'none', color: 'var(--sage-light)',
               borderRadius: 10, padding: '6px 10px', fontSize: 10, cursor: 'pointer',
