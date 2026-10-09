@@ -110,7 +110,7 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
       'BEGIN:VALARM',
       'ACTION:DISPLAY',
       'DESCRIPTION:' + esc(titulo),
-      'TRIGGER:-P1D',
+      hora ? 'TRIGGER:-PT1H' : 'TRIGGER:-P1D',
       'END:VALARM',
       'END:VEVENT',
       'END:VCALENDAR'
