@@ -63,7 +63,7 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
       mostrarToast('Fecha del concierto no valida', 'error')
       return
     }
-    let hora = concierto.hora ? String(concierto.hora).slice(0, 5) : ''
+    let hora = concierto.hora_apertura ? String(concierto.hora_apertura).slice(0, 5) : (concierto.hora ? String(concierto.hora).slice(0, 5) : '')
     if (!hora && f.length > 10) {
       const h = f.slice(11, 16)
       if (h && h !== '00:00') hora = h
@@ -82,10 +82,11 @@ export default function FichaConcierto({ concierto, amigos, onVolver, onEditar }
     let inicio, fin
     if (/^\d{1,2}:\d{2}/.test(hora)) {
       const hm = hora.split(':').map(Number)
-      const ini = new Date(Date.UTC(y, m - 1, d, hm[0] - 2, hm[1]))
-      const end = new Date(ini.getTime() + 3 * 3600 * 1000)
-      inicio = 'DTSTART:' + fmtHora(ini) + 'Z'
-      fin = 'DTEND:' + fmtHora(end) + 'Z'
+      const iniL = new Date(y, m - 1, d, hm[0], hm[1])
+      const finL = new Date(iniL.getTime() + 3 * 3600 * 1000)
+      const fmtLocal = x => x.getFullYear() + p2(x.getMonth() + 1) + p2(x.getDate()) + 'T' + p2(x.getHours()) + p2(x.getMinutes()) + '00'
+      inicio = 'DTSTART:' + fmtLocal(iniL)
+      fin = 'DTEND:' + fmtLocal(finL)
     } else {
       const ini = new Date(Date.UTC(y, m - 1, d))
       const end = new Date(ini.getTime() + 24 * 3600 * 1000)
